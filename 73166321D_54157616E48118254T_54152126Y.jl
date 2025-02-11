@@ -149,9 +149,18 @@ function accuracy(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,
 end;
 
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
-    #
-    # Codigo a desarrollar
-    #
+    numInputsLayer = numInputs;
+    ann = Chain();
+    for numOutputsLayer = topology, transferFunction = transferFunctions
+        ann = Chain(ann..., Dense(numInputsLayer, numOutputsLayer, transferFunction));
+        numInputsLayer = numOutputsLayer;
+    end;
+    if numOutputs > 2
+        ann = Chain(ann..., Dense(numInputsLayer, numOutputs, identity), softmax);
+    else
+        ann = Chain(ann..., Dense(numInputsLayer, 1, σ));
+    end;
+    return ann;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
@@ -174,15 +183,19 @@ end;
 using Random
 
 function holdOut(N::Int, P::Real)
-    #
-    # Codigo a desarrollar
-    #
+    permutation = Random.randperm(N);
+    test_index = permutation[1:(int(round(N*P)))];
+    train_index = permutation[(int(round(N*P))):end];
+    index = (train_index, test_index);
+    return index;
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
-    #
-    # Codigo a desarrollar
-    #
+    indexNoVal = holdOut(N, Ptest);
+    new_N = indexNoVal[1];
+    new_Pval = (N/new_N)*Pval;
+    indexWithVal = holdOut(new_N, new_Pval);
+    return indexWithVal;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1},

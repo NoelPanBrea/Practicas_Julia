@@ -9,7 +9,7 @@ function holdOut(N::Int, P::Real)
     test_index = permutation[1:(int(round(N*P)))];
     train_index = permutation[(int(round(N*P))):end];
     index = (train_index, test_index);
-    return index
+    return index;
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
@@ -17,7 +17,7 @@ function holdOut(N::Int, Pval::Real, Ptest::Real)
     new_N = indexNoVal[1];
     new_Pval = (N/new_N)*Pval;
     indexWithVal = holdOut(new_N, new_Pval);
-    return indexWithVal
+    return indexWithVal;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1},
