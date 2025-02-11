@@ -5,15 +5,19 @@
 using Random
 
 function holdOut(N::Int, P::Real)
-    #
-    # Codigo a desarrollar
-    #
+    permutation = Random.randperm(N);
+    test_index = permutation[1:(int(round(N*P)))];
+    train_index = permutation[(int(round(N*P))):end];
+    index = (train_index, test_index);
+    return index
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
-    #
-    # Codigo a desarrollar
-    #
+    indexNoVal = holdOut(N, Ptest);
+    new_N = indexNoVal[1];
+    new_Pval = (N/new_N)*Pval;
+    indexWithVal = holdOut(new_N, new_Pval);
+    return indexWithVal
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1},
