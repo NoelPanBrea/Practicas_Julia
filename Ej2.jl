@@ -171,26 +171,53 @@ end;
 
 function accuracy(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
     #
-    # Codigo a desarrollar
+    # Valor promedio de la comparación de ambos vectores
     #
+    return sum(targets .== outputs) / length(targets);
 end;
 
 function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2})
     #
-    # Codigo a desarrollar
+    # Solo una columna: llamada a funcion anterior tomando como vectores
+    # primera columna de targets
     #
+    #Columnas mayor que 2: mirar en qué filas no coinciden los valores 
+    #
+    #Si tiene 2 clases funciona como más de dos clases
+    if size(outputs, 2) == 1
+        return aaccuracy(outputs[:, 1], targets[:, 1]);
+    else
+        classComparison = targets .== outputs;
+        correctClassifications = all(classComparison, dims = 2);
+        accuracy = mean(correctClassifications);
+        
+        return accuracy;
+        #2º FORMA DE CALCULARLO
+        #classComparison = targets .!= outputsize
+        #incorrectClassifications = any(classComparison, dims = 2)
+        #accuracy = 1 - mean(incorrectClassifications)
+    end;
 end;
 
 function accuracy(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
     #
-    # Codigo a desarrollar
+    # Pasar el umbral al vector outputs y llamar a la función anterior accuracy
     #
+    outputs = classifyOutputs(outputs; threshold);
+    return accuracy(outputs,targets);
 end;
 
 function accuracy(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; threshold::Real=0.5)
     #
-    # Codigo a desarrollar
+    # 1 columna: accuracy(vectores de primera columna outputs, targets)
     #
+    # + 2 columnas: classifyOutputs(outputs) y luego accuracy()
+    if size(outputs, 2) == 1
+        return accuracy(outputs[:,1],targets[:,1]; threshold = threshold);
+    else
+        outputs = classifyOutputs(outputs; threshold);
+        return accuracy(outputs,targets);
+    end;
 end;
 
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
