@@ -12,117 +12,140 @@ using Flux.Losses
 
 
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
-    #
-    # Codigo a desarrollar
-    #
+    if length(classes) > 2
+        return convert(BitArray{2}, hcat([instance .== classes for instance in feature]...)');
+    else
+        return oneHotEncoding(convert(AbstractArray{Bool,1}, feature .== classes[1]));
+    end;
 end;
 
 function oneHotEncoding(feature::AbstractArray{<:Any,1})
-    #
-    # Codigo a desarrollar
-    #
+    classes = convert(AbstractArray{<:Any, 1}, unique(feature));
+    return oneHotEncoding(feature, classes);
 end;
 
 function oneHotEncoding(feature::AbstractArray{Bool,1})
-    #
-    # Codigo a desarrollar
-    #
+    return reshape(feature, :, 1);
 end;
 
 function calculateMinMaxNormalizationParameters(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    min_col =  minimum(dataset, dims = 1);
+    max_col = maximum(dataset, dims = 1);
+    return (min_col, max_col);
 end;
 
 function calculateZeroMeanNormalizationParameters(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    mean_col = mean(dataset, dims = 1);
+    deviation_col = std(datset, dims = 1);
+    return (mean_col, deviation_col);
 end;
 
 function normalizeMinMax!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    min_values, max_values = normalizationParameters[1], normalizationParameters[2];
+    dataset .-= min_values;
+    range_values = max_values .- min_values;
+
+    dataset ./= (range_values);
+    dataset[:, vec(min_values .== max_values)] .= 0;
+    return dataset;
 end;
 
 function normalizeMinMax!(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    normalizationParameters = calculateMinMaxNormalizationParameters(dataset);
+    return normalizeMinMax!(dataset, normalizationParameters);
 end;
 
 function normalizeMinMax(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    new_dataset = copy(dataset);
+    min_values, max_values = normalizationParameters[1], normalizationParameters[2];
+    new_dataset .-= min_values;
+    range_values = max_values .- min_values;
+
+    new_dataset ./= (range_values);
+    new_dataset[:, vec(min_values .== max_values)] .= 0;
+    return new_dataset;
 end;
 
 function normalizeMinMax(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    normalizationParameters = calculateMinMaxNormalizationParameters(dataset);
+    normalizeMinMax(dataset, normalizationParameters);
 end;
 
 function normalizeZeroMean!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    mean_values, desviation_values = normalizationParameters[1], normalizationParameters[2];
+    dataset .-= mean_values;
+    dataset ./= desviation_values;
+    dataset[:, vec(desviation_values .== 0)] .= 0;
+    return dataset;
 end;
 
 function normalizeZeroMean!(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    normalizationParameters = calculateZeroMeanNormalizationParameters(dataset);
+    return normalizeZeroMean!(dataset, normalizationParameters);
 end;
 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    new_dataset = copy(dataset);
+    mean_values, desviation_values = normalizationParameters[1], normalizationParameters[2];
+
+    new_dataset .-= mean_values;
+    new_dataset ./= desviation_values;
+    dataset[:, vec(desviation_values .== 0)] .= 0;
+    return dataset; 
 end;
 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    normalizationParameters = calculateZeroMeanNormalizationParameters(dataset);
+    return normalizeZeroMean(dataset, normalizationParameters);
 end;
 
 function classifyOutputs(outputs::AbstractArray{<:Real,1}; threshold::Real=0.5)
-    #
-    # Codigo a desarrollar
-    #
+    return outputs .>= threshold;
 end;
 
 function classifyOutputs(outputs::AbstractArray{<:Real,2}; threshold::Real=0.5)
-    #
-    # Codigo a desarrollar
-    #
+    if size(outputs, 2) == 1
+        #Si tiene solo una columna
+        outputs = classifyOutputs(outputs[:]; threshold);
+        outputs = reshape(outputs, :, 1);
+        return outputs;
+    else
+        #Si tiene MÁS de una columna la matriz
+        (_, indicesMaxEachInstance) = findmax(outputs, dims = 2);
+        outputs = falses(size(outputs));
+        outputs[indicesMaxEachInstance] .= true; 
+        return outputs;
+    end;
 end;
 
 function accuracy(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
-    #
-    # Codigo a desarrollar
-    #
+    return sum(targets .== outputs) / length(targets);
 end;
 
 function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2})
-    #
-    # Codigo a desarrollar
-    #
+    if size(outputs, 2) == 1
+        return aaccuracy(outputs[:, 1], targets[:, 1]);
+    else
+        classComparison = targets .== outputs;
+        correctClassifications = all(classComparison, dims = 2);
+        accuracy = mean(correctClassifications);
+        
+        return accuracy;
+    end;
 end;
 
 function accuracy(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
-    #
-    # Codigo a desarrollar
-    #
+    outputs = classifyOutputs(outputs; threshold);
+    return accuracy(outputs,targets);
 end;
 
 function accuracy(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; threshold::Real=0.5)
-    #
-    # Codigo a desarrollar
-    #
+    if size(outputs, 2) == 1
+        return accuracy(outputs[:,1],targets[:,1]; threshold = threshold);
+    else
+        outputs = classifyOutputs(outputs; threshold);
+        return accuracy(outputs,targets);
+    end;
 end;
 
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
