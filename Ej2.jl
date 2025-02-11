@@ -137,7 +137,7 @@ function normalizeZeroMean(dataset::AbstractArray{<:Real,2})
     y llama a notmalizeZeroMean (que NO modifica la matriz)
     """
     normalizationParameters = calculateZeroMeanNormalizationParameters(dataset);
-    normalizeZeroMean(dataset, normalizationParameters);
+    return normalizeZeroMean(dataset, normalizationParameters);
 end;
 
 function classifyOutputs(outputs::AbstractArray{<:Real,1}; threshold::Real=0.5)
