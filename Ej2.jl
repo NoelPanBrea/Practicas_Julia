@@ -44,7 +44,7 @@ function calculateZeroMeanNormalizationParameters(dataset::AbstractArray{<:Real,
     con las medias y desviaciones típicas de cada columna. (Sacado del PDF)
     """
     mean_col = mean(dataset, dims = 1);
-    deviation_col = std(datset, dims = 1);
+    deviation_col = std(dataset, dims = 1);
     return (mean_col, deviation_col);
 end;
 
