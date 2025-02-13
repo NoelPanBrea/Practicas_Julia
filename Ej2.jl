@@ -223,7 +223,7 @@ end;
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     numInputsLayer = numInputs;
     ann = Chain();
-    for numOutputsLayer = topology, transferFunction = transferFunctions
+    for (numOutputsLayer, transferFunction) in zip(topology, transferFunctions)
         ann = Chain(ann..., Dense(numInputsLayer, numOutputsLayer, transferFunction));
         numInputsLayer = numOutputsLayer;
     end;
@@ -254,17 +254,16 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tupl
     #
 end;
 
-dataset = readdlm("iris.data",',')
-begin
-    inputs = dataset[:,1:4];
-    # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
-    inputs = Float32.(inputs);
-    inputs = convert(Array{Float32,2},inputs);
-    inputs = [Float32(x) for x in inputs];
-    println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
-    targets = dataset[:,5];
-    println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
-    targets = oneHotEncoding(targets);
-    println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-
-end;
+# dataset = readdlm("iris.data",',')
+# begin
+#     inputs = dataset[:,1:4];
+#     # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
+#     inputs = Float32.(inputs);
+#     inputs = convert(Array{Float32,2},inputs);
+#     inputs = [Float32(x) for x in inputs];
+#     println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
+#     targets = dataset[:,5];
+#     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
+#     targets = oneHotEncoding(targets);
+#     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
+# end;
