@@ -10,7 +10,7 @@ using Statistics
 using Flux
 using Flux.Losses
 
-
+#oneHotEncoding LISTA
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
     if length(classes) > 2
         return convert(BitArray{2}, hcat([instance .== classes for instance in feature]...)');
@@ -27,7 +27,7 @@ end;
 function oneHotEncoding(feature::AbstractArray{Bool,1})
     return reshape(feature, :, 1);
 end;
-
+#calculateMinMaxNormalizationParameters LISTA
 function calculateMinMaxNormalizationParameters(dataset::AbstractArray{<:Real,2})
     """
     Recibe una matriz y devuelve una tupla con una matriz con una fila, 
@@ -37,17 +37,17 @@ function calculateMinMaxNormalizationParameters(dataset::AbstractArray{<:Real,2}
     max_col = maximum(dataset, dims = 1);
     return (min_col, max_col);
 end;
-
+#calculateZeroMeanNormalizationParameters: dataset escrito mal (corregido)
 function calculateZeroMeanNormalizationParameters(dataset::AbstractArray{<:Real,2})
     """
     Recibe una matriz y devuelve una tupla con una matriz con una fila, 
     con las medias y desviaciones típicas de cada columna. (Sacado del PDF)
     """
     mean_col = mean(dataset, dims = 1);
-    deviation_col = std(datset, dims = 1);
+    deviation_col = std(dataset, dims = 1);
     return (mean_col, deviation_col);
 end;
-
+#normalizeMinMax! LISTA
 function normalizeMinMax!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     """
     Recibe una matriz a normalizar y los parámetros de normalización
@@ -70,7 +70,7 @@ function normalizeMinMax!(dataset::AbstractArray{<:Real,2})
     normalizationParameters = calculateMinMaxNormalizationParameters(dataset);
     return normalizeMinMax!(dataset, normalizationParameters);
 end;
-
+#normalizeMinMax LISTA
 function normalizeMinMax(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     """
     Recibe una matriz a normalizar y los parámetros de normalización
@@ -94,7 +94,7 @@ function normalizeMinMax(dataset::AbstractArray{<:Real,2})
     normalizationParameters = calculateMinMaxNormalizationParameters(dataset);
     normalizeMinMax(dataset, normalizationParameters);
 end;
-
+#normalizeZeroMean! LISTA
 function normalizeZeroMean!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     """
     Recibe una matriz a normalizar y los parámetros de normalización
@@ -115,7 +115,7 @@ function normalizeZeroMean!(dataset::AbstractArray{<:Real,2})
     normalizationParameters = calculateZeroMeanNormalizationParameters(dataset);
     return normalizeZeroMean!(dataset, normalizationParameters);
 end;
-
+#normalizeZeroMean: salidas incorrectas con los parámetros 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     """
     Recibe una matriz a normalizar y los parámetros de normalización
@@ -139,7 +139,7 @@ function normalizeZeroMean(dataset::AbstractArray{<:Real,2})
     normalizationParameters = calculateZeroMeanNormalizationParameters(dataset);
     return normalizeZeroMean(dataset, normalizationParameters);
 end;
-
+#classifyOutputs LISTA
 function classifyOutputs(outputs::AbstractArray{<:Real,1}; threshold::Real=0.5)
     """
     Clasifica el vector de outputs devolviendo un vector de valores binarios
@@ -168,7 +168,7 @@ function classifyOutputs(outputs::AbstractArray{<:Real,2}; threshold::Real=0.5)
     end;
 
 end;
-
+#accuracy: problema por escribir mal accuracy (CORREGIDO)
 function accuracy(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
     #
     # Valor promedio de la comparación de ambos vectores
@@ -185,7 +185,7 @@ function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}
     #
     #Si tiene 2 clases funciona como más de dos clases
     if size(outputs, 2) == 1
-        return aaccuracy(outputs[:, 1], targets[:, 1]);
+        return accuracy(outputs[:, 1], targets[:, 1]);
     else
         classComparison = targets .== outputs;
         correctClassifications = all(classComparison, dims = 2);
@@ -219,7 +219,7 @@ function accuracy(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,
         return accuracy(outputs,targets);
     end;
 end;
-
+#buildClassANN: RNA con número de capas incorrecto
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     numInputsLayer = numInputs;
     ann = Chain();

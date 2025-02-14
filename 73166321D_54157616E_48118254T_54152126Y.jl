@@ -36,7 +36,7 @@ end;
 
 function calculateZeroMeanNormalizationParameters(dataset::AbstractArray{<:Real,2})
     mean_col = mean(dataset, dims = 1);
-    deviation_col = std(datset, dims = 1);
+    deviation_col = std(dataset, dims = 1);
     return (mean_col, deviation_col);
 end;
 
@@ -85,18 +85,11 @@ function normalizeZeroMean!(dataset::AbstractArray{<:Real,2})
 end;
 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    new_dataset = copy(dataset);
-    mean_values, desviation_values = normalizationParameters[1], normalizationParameters[2];
-
-    new_dataset .-= mean_values;
-    new_dataset ./= desviation_values;
-    dataset[:, vec(desviation_values .== 0)] .= 0;
-    return dataset; 
+ 
 end;
 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2})
-    normalizationParameters = calculateZeroMeanNormalizationParameters(dataset);
-    return normalizeZeroMean(dataset, normalizationParameters);
+   
 end;
 
 function classifyOutputs(outputs::AbstractArray{<:Real,1}; threshold::Real=0.5)
@@ -105,12 +98,10 @@ end;
 
 function classifyOutputs(outputs::AbstractArray{<:Real,2}; threshold::Real=0.5)
     if size(outputs, 2) == 1
-        #Si tiene solo una columna
         outputs = classifyOutputs(outputs[:]; threshold);
         outputs = reshape(outputs, :, 1);
         return outputs;
     else
-        #Si tiene MÁS de una columna la matriz
         (_, indicesMaxEachInstance) = findmax(outputs, dims = 2);
         outputs = falses(size(outputs));
         outputs[indicesMaxEachInstance] .= true; 
@@ -124,7 +115,7 @@ end;
 
 function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2})
     if size(outputs, 2) == 1
-        return aaccuracy(outputs[:, 1], targets[:, 1]);
+        return accuracy(outputs[:, 1], targets[:, 1]);
     else
         classComparison = targets .== outputs;
         correctClassifications = all(classComparison, dims = 2);
@@ -148,19 +139,9 @@ function accuracy(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,
     end;
 end;
 
+
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
-    numInputsLayer = numInputs;
-    ann = Chain();
-    for numOutputsLayer = topology, transferFunction = transferFunctions
-        ann = Chain(ann..., Dense(numInputsLayer, numOutputsLayer, transferFunction));
-        numInputsLayer = numOutputsLayer;
-    end;
-    if numOutputs > 2
-        ann = Chain(ann..., Dense(numInputsLayer, numOutputs, identity), softmax);
-    else
-        ann = Chain(ann..., Dense(numInputsLayer, 1, σ));
-    end;
-    return ann;
+
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
