@@ -223,7 +223,7 @@ end;
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     numInputsLayer = numInputs;
     ann = Chain();
-    for numOutputsLayer = topology, transferFunction = transferFunctions
+    for (numOutputsLayer, transferFunction) in zip(topology, transferFunctions)
         ann = Chain(ann..., Dense(numInputsLayer, numOutputsLayer, transferFunction));
         numInputsLayer = numOutputsLayer;
     end;
@@ -232,12 +232,20 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
     else
         ann = Chain(ann..., Dense(numInputsLayer, 1, σ));
     end;
-    return ann
+    return ann;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
-    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[1], 2), transferFunctions);
-    
+    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions);
+    dataset[1] = convert(AbstractArray{Float32, 2}, dataset[1]);
+    dataset[1] = reshape(dataset[1], :, 1)
+    dataset[2] = reshape(dataset[2], :, 1)
+    for _ in range(maxEpochs)
+        loss = loss3(model)
+        opt_state = setup(Adam(learningRate), ann);
+        train!(loss3, ann, dataset, opt_state)
+        
+    end;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
@@ -246,17 +254,16 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tupl
     #
 end;
 
-dataset = readdlm("iris.data",',')
-begin
-    inputs = dataset[:,1:4];
-    # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
-    inputs = Float32.(inputs);
-    inputs = convert(Array{Float32,2},inputs);
-    inputs = [Float32(x) for x in inputs];
-    println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
-    targets = dataset[:,5];
-    println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
-    targets = oneHotEncoding(targets);
-    println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-
-end;
+# dataset = readdlm("iris.data",',')
+# begin
+#     inputs = dataset[:,1:4];
+#     # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
+#     inputs = Float32.(inputs);
+#     inputs = convert(Array{Float32,2},inputs);
+#     inputs = [Float32(x) for x in inputs];
+#     println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
+#     targets = dataset[:,5];
+#     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
+#     targets = oneHotEncoding(targets);
+#     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
+# end;

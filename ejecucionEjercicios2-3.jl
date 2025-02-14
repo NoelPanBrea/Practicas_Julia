@@ -3,11 +3,12 @@
 # Archivo de pruebas para realizar autoevaluación de algunas funciones de los ejercicios
 
 # Importamos el archivo con las soluciones a los ejercicios
-include("soluciones.jl");
+include("Ej2.jl");
 #   Cambiar "soluciones.jl" por el nombre del archivo que contenga las funciones a desarrollar
 
 # Fichero de pruebas realizado con la versión 1.11.2 de Julia
 println(VERSION)
+import Random
 #  y la 1.11.2 de Random
 println(Random.VERSION)
 #  y la versión 0.16.0 de Flux
@@ -15,9 +16,6 @@ import Pkg
 Pkg.status("Flux")
 
 # Es posible que con otras versiones los resultados sean distintos, estando las funciones bien, sobre todo en la funciones que implican alguna componente aleatoria
-
-
-
 
 # Cargamos el dataset
 using DelimitedFiles: readdlm
