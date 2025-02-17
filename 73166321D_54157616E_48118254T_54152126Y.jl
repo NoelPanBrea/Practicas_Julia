@@ -141,7 +141,18 @@ end;
 
 
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
-
+    numInputsLayer = numInputs;
+    ann = Chain();
+    for (numOutputsLayer, transferFunction) in zip(topology, transferFunctions)
+        ann = Chain(ann..., Dense(numInputsLayer, numOutputsLayer, transferFunction));
+        numInputsLayer = numOutputsLayer;
+    end;
+    if numOutputs > 2
+        ann = Chain(ann..., Dense(numInputsLayer, numOutputs, identity), softmax);
+    else
+        ann = Chain(ann..., Dense(numInputsLayer, 1, σ));
+    end;
+    return ann;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
