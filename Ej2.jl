@@ -115,7 +115,7 @@ function normalizeZeroMean!(dataset::AbstractArray{<:Real,2})
     normalizationParameters = calculateZeroMeanNormalizationParameters(dataset);
     return normalizeZeroMean!(dataset, normalizationParameters);
 end;
-#normalizeZeroMean: salidas incorrectas con los parámetros 
+#normalizeZeroMean: salidas incorrectas con los parámetros (CORREGIDO)
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     """
     Recibe una matriz a normalizar y los parámetros de normalización
@@ -219,7 +219,7 @@ function accuracy(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,
         return accuracy(outputs,targets);
     end;
 end;
-#buildClassANN: RNA con número de capas incorrecto
+#buildClassANN: RNA con número de capas incorrecto (CORREGIDO)
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     numInputsLayer = numInputs;
     ann = Chain();
