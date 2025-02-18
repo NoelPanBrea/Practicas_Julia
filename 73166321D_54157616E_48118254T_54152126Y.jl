@@ -256,20 +256,60 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
-    new_outputs = classifyOutputs(outputs, threshold)
-    confusionMatrix(new_outputs, targets)
+    new_outputs = classifyOutputs(outputs, threshold = threshold);
+    confusionMatrix(new_outputs, targets);
 end;
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    #
-    # Codigo a desarrollar
-    #
+    
+    if (size(outputs, 2) != size(targets, 2)) & size(outputs, 2) == 1
+        return confusionMatrix(outputs[:,1], targets[:,1], strategy)
+    end
+
+    num_clases = size(outputs, 2)
+    sensibilidad = zeros(Float64, num_classes)
+    especificidad = zeros(Float64, num_classes)
+    valor_predictivo_positivo = zeros(Float64, num_classes)
+    valor_predictivo_negativo = zeros(Float64, num_classes)
+    f1_score = zeros(Float64, num_classes)
+
+    for i in 1:num_classes
+        outputs_class = outputs[:, i]
+        targets_class = targets[:, i]
+        
+        stats = confusionMatrix(outputs_class, targets_class)
+        sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score = stats[3:end]
+    end
+
+    matriz_confusion = [sum((outputs .== i) .& (targets .== j)) for i in 1:num_classes, j in 1:num_classes]
+
+    instancias_clase = vec(sum(targets, dims=1))
+
+    if weighted == true
+        sensibilidad_media = sum(sensibilidad .* instancias_clase) / sum(instancias_clase)
+        especificidad_media = sum(especificidad .* instancias_clase) / sum(instancias_clase)
+        valor_predictivo_positivo_medio = sum(valor_predictivo_positivo .* instancias_clase) / sum(instancias_clase)
+        valor_predictivo_negativo_medio = sum(valor_predictivo_negativo .* instancias_clase) / sum(instancias_clase)
+        f1_score_medio = sum(f1_score .* instancias_clase) / sum(instancias_clase)
+
+    else
+        sensibilidad_media = mean(sensibilidad)
+        especificidad_media = mean(especificidad)
+        valor_predictivo_positivo_medio = mean(valor_predictivo_positivo)
+        valor_predictivo_negativo_medio = mean(valor_predictivo_negativo)
+        f1_score_medio = mean(f1_score1)
+        
+    end
+
+    precision = accuracy(outputs, targets)
+    tasa_error = 1 - accuracy_value
+
+    return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; threshold::Real=0.5, weighted::Bool=true)
-    #
-    # Codigo a desarrollar
-    #
+    new_outputs = classifyOutputs(outputs, threshold = threshold);
+    confusionMatrix(new_outputs, targets, weighted = weighted);
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1}; weighted::Bool=true)
@@ -305,7 +345,6 @@ function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, Abstract
     # Codigo a desarrollar
     #
 end;
-
 
 function printConfusionMatrix(outputs::AbstractArray{Bool,1},
     targets::AbstractArray{Bool,1})
