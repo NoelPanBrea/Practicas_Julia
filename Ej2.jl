@@ -236,7 +236,7 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
-    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions);
+    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions = transferFunctions);
     dataset[1] = convert(AbstractArray{Float32, 2}, dataset[1]);
     dataset[1] = reshape(dataset[1], :, 1)
     dataset[2] = reshape(dataset[2], :, 1)

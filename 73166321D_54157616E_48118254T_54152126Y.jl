@@ -307,6 +307,32 @@ function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, Abstract
 end;
 
 
+function printConfusionMatrix(outputs::AbstractArray{Bool,1},
+    targets::AbstractArray{Bool,1})
+    ann = confusionMatrix(outputs,targets);
+    print("Valor de precisión: ",ann[1]);
+    print("Tasa de fallo: ", ann[2]);
+    print("Sensibilidad: ", ann[3]);
+    print("Especificidad: ", ann[4]);
+    print("Valor predictivo positivo: ", ann[5]);
+    print("F1-score: ", ann[6]);
+    print("Matriz de confusión: ", ann[7]);
+
+end;
+    
+
+function printConfusionMatrix(outputs::AbstractArray{<:Real,1},
+    targets::AbstractArray{Bool,1}; threshold::Real=0.5) 
+    ann = confusionMatrix(outputs, targets, threshold=threshold);
+    print("Valor de precisión: ",ann[1]);
+    print("Tasa de fallo: ", ann[2]);
+    print("Sensibilidad: ", ann[3]);
+    print("Especificidad: ", ann[4]);
+    print("Valor predictivo positivo: ", ann[5]);
+    print("F1-score: ", ann[6]);
+    print("Matriz de confusión: ", ann[7]);
+
+end;
 
 
 # ----------------------------------------------------------------------------------------------
