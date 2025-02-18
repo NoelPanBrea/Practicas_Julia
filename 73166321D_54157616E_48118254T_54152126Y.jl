@@ -313,15 +313,15 @@ function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArra
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1}; weighted::Bool=true)
-    #
-    # Codigo a desarrollar
-    #
+    @assert(all([in(label, classes) for label in vcat(targets, outputs)]));
+    bool_outputs = oneHotEncoding(outputs, classes);
+    bool_targets = oneHotEncoding(targets, classes);
+    return confusionMatrix(bool_outputs, bool_targets, weighted = weighted);
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}; weighted::Bool=true)
-    #
-    # Codigo a desarrollar
-    #
+    classes = unique(vcat(targets, outputs));
+    return confusionMatrix(outputs, targets, classes, weighted = weighted);
 end;
 
 using SymDoME
