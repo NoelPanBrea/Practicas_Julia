@@ -219,15 +219,45 @@ end;
 
 
 function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
-    #
-    # Codigo a desarrollar
-    #
+    VP = sum(outputs .& targets);
+    VN = sum(.!outputs .& .!targets);
+    FP = sum(outputs .& .!targets);
+    FN = sum(.!outputs .& targets);
+
+    matriz_confusion = [VP FP; FN VN];
+
+    precision = (VN + VP) / (VN + VP + FN + FP);
+    tasa_error = (FN + FP) / (VN + VP + FN + FP);
+    sensibilidad = VP / (FN + VP);
+    especificidad = VN / (FP + VN);
+    valor_predictivo_positivo = VP / (VP + FP);
+    valor_predictivo_negativo = VN / (VN + FN);
+    f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
+
+    if VP == 0 & FN == 0  
+        sensibilidad = 1;
+    end
+    if VP == 0 & FP == 0  
+        valor_predictivo_positivo = 1;
+    end
+    if TN == 0 & FP == 0  
+        especificidad = 1;
+    end
+    if VN == 0 & FN == 0  
+        valor_predictivo_negativo = 1  ;
+    end
+
+    if valor_predictivo_positivo == 0 & sensibilidad == 0
+        f1_score = 0;
+
+    return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
+    
+
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
-    #
-    # Codigo a desarrollar
-    #
+    new_outputs = classifyOutputs(outputs, threshold)
+    confusionMatrix(new_outputs, targets)
 end;
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
@@ -342,4 +372,4 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
 end;
 
 
-
+end;
