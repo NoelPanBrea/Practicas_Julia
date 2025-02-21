@@ -236,16 +236,18 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
-    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions);
-    dataset[1] = convert(AbstractArray{Float32, 2}, dataset[1]);
-    dataset[1] = reshape(dataset[1], :, 1)
-    dataset[2] = reshape(dataset[2], :, 1)
-    for _ in range(maxEpochs)
-        loss = loss3(model)
-        opt_state = setup(Adam(learningRate), ann);
-        train!(loss3, ann, dataset, opt_state)
-        
+    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions = transferFunctions);
+    dataset = (permutedims(convert(AbstractArray{Float32, 2}, dataset[1])), permutedims(dataset[2]));
+    loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y);
+    losses = [loss(ann, dataset[1], dataset[2])];
+    cnt = 0;
+    opt_state = Flux.setup(Adam(learningRate), ann);
+    while cnt < maxEpochs && losses[length(losses)] > minLoss
+        cnt += 1;
+        Flux.train!(loss, ann, [dataset], opt_state);
+        push!(losses, loss(ann, dataset[1], dataset[2]));
     end;
+    return ann, losses;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
@@ -254,19 +256,25 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tupl
     # Llamar a la función anterior
 
     dataset = reshape((inputs,targets), :, 1);
-    trainClassANN(topology,dataset,transferFunctions,maxEpochs,minLoss,learningRate)
+    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate)
 end;
 
-# dataset = readdlm("iris.data",',')
-# begin
-#     inputs = dataset[:,1:4];
-#     # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
-#     inputs = Float32.(inputs);
-#     inputs = convert(Array{Float32,2},inputs);
-#     inputs = [Float32(x) for x in inputs];
-#     println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
-#     targets = dataset[:,5];
-#     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
-#     targets = oneHotEncoding(targets);
-#     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-# end;
+dataset = readdlm("iris.data",',')
+begin
+    inputs = dataset[:,1:4];
+    # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
+    inputs = Float32.(inputs);
+    inputs = convert(Array{Float32,2},inputs);
+    inputs = [Float32(x) for x in inputs];
+    println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
+    targets = dataset[:,5];
+    println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
+    targets = oneHotEncoding(targets);
+    println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
+    ann, losses = trainClassANN([1], (inputs, targets));
+    println(length(losses))
+    println(accuracy(ann(permutedims(inputs))', targets))
+    print(classifyOutputs(ann([5.1,3.5,1.4,0.2])))
+    print(classifyOutputs(ann([7.0,3.2,4.7,1.4])))
+    print(classifyOutputs(ann([7.6,3.0,6.6,2.1])))
+end;

@@ -156,14 +156,23 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
-    #
-    # Codigo a desarrollar
-    #
+    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions = transferFunctions);
+    dataset = (permutedims(convert(AbstractArray{Float32, 2}, dataset[1])), permutedims(dataset[2]));
+    loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y);
+    losses = [loss(ann, dataset[1], dataset[2])];
+    cnt = 0;
+    opt_state = Flux.setup(Adam(learningRate), ann);
+    while cnt < maxEpochs && losses[length(losses)] > minLoss
+        cnt += 1;
+        Flux.train!(loss, ann, [dataset], opt_state);
+        push!(losses, loss(ann, dataset[1], dataset[2]));
+    end;
+    return ann, losses;
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
     dataset = reshape((inputs,targets), :, 1);
-    trainClassANN(topology,dataset,transferFunctions,maxEpochs,minLoss,learningRate)
+    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate)
 end;
 
 
