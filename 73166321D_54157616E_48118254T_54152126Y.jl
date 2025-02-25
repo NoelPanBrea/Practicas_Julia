@@ -191,8 +191,8 @@ using Random
 
 function holdOut(N::Int, P::Real)
     permutation = Random.randperm(N);
-    test_index = permutation[1:(int(round(N*P)))];
-    train_index = permutation[(int(round(N*P))):end];
+    test_index = permutation[1:(convert(Int64, (round(N*P))))];
+    train_index = permutation[(convert(Int64, (round(N*P)))):end];
     index = (train_index, test_index);
     return index;
 end;
@@ -252,20 +252,20 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
 
     if VP == 0 & FN == 0  
         sensibilidad = 1;
-    end
+    end;
     if VP == 0 & FP == 0  
         valor_predictivo_positivo = 1;
-    end
+    end;
     if TN == 0 & FP == 0  
         especificidad = 1;
-    end
+    end;
     if VN == 0 & FN == 0  
         valor_predictivo_negativo = 1  ;
-    end
+    end;
 
     if valor_predictivo_positivo == 0 & sensibilidad == 0
         f1_score = 0;
-
+    end;
     return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
     
 
@@ -280,13 +280,13 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     
     if (size(outputs, 2) != size(targets, 2)) & size(outputs, 2) == 1
         return confusionMatrix(outputs[:,1], targets[:,1], strategy);
-    end
+    end;
 
     num_clases = size(outputs, 2);
     sensibilidad = zeros(Float64, num_classes);
     especificidad = zeros(Float64, num_classes);
-    valor_predictivo_positivo = zeros(Float64, num_classes);
-    valor_predictivo_negativo = zeros(Float64, num_classes);
+    valor_predictivo_positivo = zeros(Float64, num_clases);
+    valor_predictivo_negativo = zeros(Float64, num_clases);
     f1_score = zeros(Float64, num_classes);
 
     for i in 1:num_classes
@@ -295,7 +295,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
         
         stats = confusionMatrix(outputs_class, targets_class);
         sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score = stats[3:end];
-    end
+    end;
 
     matriz_confusion = [sum((outputs .== i) .& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
 
@@ -315,7 +315,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
         valor_predictivo_negativo_medio = mean(valor_predictivo_negativo);
         f1_score_medio = mean(f1_score1);
         
-    end
+    end;
 
     precision = accuracy(outputs, targets);
     tasa_error = 1 - accuracy_value;
@@ -474,7 +474,4 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     #
     # Codigo a desarrollar
     #
-end;
-
-
 end;
