@@ -46,11 +46,11 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     opt_state = Flux.setup(Adam(learningRate), ann);
 
     # Parada temprana
-    best_val_loss = Inf32
-    best_epoch = 0
-    best_model = deepcopy(ann)
+    best_val_loss = Inf32;
+    best_epoch = 0;
+    best_model = deepcopy(ann);
 
-    has_validation = validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2))
+    has_validation = validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2));
 
     if has_validation
         valid_data = (permutedims(convert(AbstractArray{Float32,2},valid_data[1])), permutedims(valid_data[2]));
@@ -62,7 +62,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
         push!(test_losses, loss(ann, test_data[1], test_data[2]));
     end;
 
-    cnt = 0
+    cnt = 0;
     while cnt < maxEpochs && train_losses[end] > minLoss && ((!has_validation) || (cnt - best_epoch < maxEpochsVal))
         cnt += 1;
         Flux.train!(loss, ann, [dataset], opt_state);
@@ -98,10 +98,12 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20)
     #
-    # Codigo a desarrollar
+    # Mismo de arriba pero que funcione cuando son vectores
     #
-    train_dataset = reshape((inputs,targets), :, 1);
-    valid_data = reshap
-    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate)
+    trainingDataset = (trainingDataset[1],reshape(trainingDataset[2], :, 1));
+    validationDataset = (validationDataset[1],reshape(validationDataset[2], :, 1));
+    testDataset = (testDataset[1],reshape(testDataset[2], :, 1));
+    
+    trainClassANN(topology,trainingDataset,validationDataset,testDataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate,maxEpochsVal = maxEpochsVal);
 
 end;

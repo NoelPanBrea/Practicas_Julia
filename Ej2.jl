@@ -256,10 +256,10 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tupl
     # Llamar a la función anterior
 
     dataset = reshape((inputs,targets), :, 1);
-    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate)
+    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate);
 end;
 
-dataset = readdlm("iris.data",',')
+dataset = readdlm("iris.data",',');
 begin
     inputs = dataset[:,1:4];
     # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
@@ -272,9 +272,9 @@ begin
     targets = oneHotEncoding(targets);
     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
     ann, losses = trainClassANN([1], (inputs, targets));
-    println(length(losses))
-    println(accuracy(ann(permutedims(inputs))', targets))
-    print(classifyOutputs(ann([5.1,3.5,1.4,0.2])))
-    print(classifyOutputs(ann([7.0,3.2,4.7,1.4])))
-    print(classifyOutputs(ann([7.6,3.0,6.6,2.1])))
+    println(length(losses));
+    println(accuracy(ann(permutedims(inputs))', targets));
+    print(classifyOutputs(ann([5.1,3.5,1.4,0.2])));
+    print(classifyOutputs(ann([7.0,3.2,4.7,1.4])));
+    print(classifyOutputs(ann([7.6,3.0,6.6,2.1])));
 end;

@@ -90,8 +90,8 @@ function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParame
 
     new_dataset .-= mean_values;
     new_dataset ./= desviation_values;
-    dataset[:, vec(desviation_values .== 0)] .= 0;
-    return dataset;
+    new_dataset[:, vec(desviation_values .== 0)] .= 0;
+    return new_dataset;
 end;
 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2})
@@ -179,7 +179,7 @@ end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
     dataset = reshape((inputs,targets), :, 1);
-    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate)
+    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate);
 end;
 
 
@@ -213,22 +213,22 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20)
     ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions = transferFunctions);
 
-    dataset = (permutedims(convert(AbstractArray{Float32, 2}, dataset[1])), permutedims(dataset[2]));
+    train_dataset = (permutedims(convert(AbstractArray{Float32, 2}, trainingDataset[1])), permutedims(trainingDataset[2]));
 
     loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y);
     
-    train_losses = [loss(ann, dataset[1], dataset[2])];
+    train_losses = [loss(ann, train_dataset[1], train_dataset[2])];
     val_losses = Float32[];
     test_losses = Float32[];
     
     opt_state = Flux.setup(Adam(learningRate), ann);
 
     # Parada temprana
-    best_val_loss = Inf32
-    best_epoch = 0
-    best_model = deepcopy(ann)
+    best_val_loss = Inf32;
+    best_epoch = 0;
+    best_model = deepcopy(ann);
 
-    has_validation = validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2))
+    has_validation = validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2));
 
     if has_validation
         valid_data = (permutedims(convert(AbstractArray{Float32,2},valid_data[1])), permutedims(valid_data[2]));
@@ -240,11 +240,11 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
         push!(test_losses, loss(ann, test_data[1], test_data[2]));
     end;
 
-    cnt = 0
+    cnt = 0;
     while cnt < maxEpochs && train_losses[end] > minLoss && ((!has_validation) || (cnt - best_epoch < maxEpochsVal))
         cnt += 1;
-        Flux.train!(loss, ann, [dataset], opt_state);
-        push!(train_losses, loss(ann, dataset[1], dataset[2]));
+        Flux.train!(loss, ann, [train_datase], opt_state);
+        push!(train_losses, loss(ann, train_datase[1], train_datase[2]));
 
         if has_validation
             val_loss = loss(ann, valid_data[1], valid_data[2]);
@@ -275,9 +275,13 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     testDataset::      Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}=(Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2)), falses(0)),
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20)
-    #
-    # Codigo a desarrollar
-    #
+
+    trainingDataset = (trainingDataset[1],reshape(trainingDataset[2], :, 1));
+    validationDataset = (validationDataset[1],reshape(validationDataset[2], :, 1));
+    testDataset = (testDataset[1],reshape(testDataset[2], :, 1));
+    
+    trainClassANN(topology,trainingDataset,validationDataset,testDataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate,maxEpochsVal = maxEpochsVal);
+
 end;
 
 
