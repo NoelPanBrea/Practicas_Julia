@@ -3,7 +3,7 @@
 # ----------------------------------------------------------------------------------------------
 
 using Random
-
+#Error al ejecutar: Can only convert categorical elements to integers.
 function holdOut(N::Int, P::Real)
     permutation = Random.randperm(N);
     test_index = permutation[1:(int(round(N*P)))];
