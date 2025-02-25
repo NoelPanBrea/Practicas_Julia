@@ -27,9 +27,11 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20)
     """
+    Los datos tienen que estar en Float32
     Si se pasa un validationDataset, la RNA devuelta es la de mejor
     error de validacion
     Si no se pasa un validationDataset, funciona igual que el Ej2 
+    Hay que devolver una tupla de 4 elementos, 1º RNA entrenada, 2º train_losses, 3º val_losses, 4º test_losses
     """
     ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions = transferFunctions);
 
