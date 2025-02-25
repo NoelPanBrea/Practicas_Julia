@@ -445,12 +445,27 @@ end;
 
 function printConfusionMatrix(outputs::AbstractArray{Bool,2},
     targets::AbstractArray{Bool,2}; weighted::Bool=true)
-
+    ann = confusionMatrix(outputs, targets, weighted);
+    print("Valor de precisión: ",ann[1]);
+    print("Tasa de fallo: ", ann[2]);
+    print("Sensibilidad: ", ann[3]);
+    print("Especificidad: ", ann[4]);
+    print("Valor predictivo positivo: ", ann[5]);
+    print("F1-score: ", ann[6]);
+    print("Matriz de confusión: ", ann[7]);
 end;
     
     
 function printConfusionMatrix(outputs::AbstractArray{<:Real,2},
     targets::AbstractArray{Bool,2}; weighted::Bool=true)
+    ann = confusionMatrix(outputs, targets, weighted);
+    print("Valor de precisión: ",ann[1]);
+    print("Tasa de fallo: ", ann[2]);
+    print("Sensibilidad: ", ann[3]);
+    print("Especificidad: ", ann[4]);
+    print("Valor predictivo positivo: ", ann[5]);
+    print("F1-score: ", ann[6]);
+    print("Matriz de confusión: ", ann[7]);
 
 end;
 
@@ -458,12 +473,33 @@ end;
 function printConfusionMatrix(outputs::AbstractArray{<:Any,1},
     targets::AbstractArray{<:Any,1},
     classes::AbstractArray{<:Any,1}; weighted::Bool=true)
+    @assert(all([in(label, classes) for label in vcat(targets, outputs)]));
+    bool_outputs = oneHotEncoding(outputs, classes);
+    bool_targets = oneHotEncoding(targets, classes);
+    ann = confusionMatrix(bool_outputs, bool_targets, weighted);
+    print("Valor de precisión: ",ann[1]);
+    print("Tasa de fallo: ", ann[2]);
+    print("Sensibilidad: ", ann[3]);
+    print("Especificidad: ", ann[4]);
+    print("Valor predictivo positivo: ", ann[5]);
+    print("F1-score: ", ann[6]);
+    print("Matriz de confusión: ", ann[7]);
 
 end;
 
 
 function printConfusionMatrix(outputs::AbstractArray{<:Any,1},
-    targets::AbstractArray{<:Any,1}; weighted::Bool=true) 
+    targets::AbstractArray{<:Any,1}; weighted::Bool=true)
+    classes = unique(vcat(targets, outputs));
+    ann = confusionMatrix(outputs, classes, weighted);
+    print("Valor de precisión: ",ann[1]);
+    print("Tasa de fallo: ", ann[2]);
+    print("Sensibilidad: ", ann[3]);
+    print("Especificidad: ", ann[4]);
+    print("Valor predictivo positivo: ", ann[5]);
+    print("F1-score: ", ann[6]);
+    print("Matriz de confusión: ", ann[7]);
+
 
 end;
 
