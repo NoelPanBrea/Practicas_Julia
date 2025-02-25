@@ -50,7 +50,9 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     best_epoch = 0
     best_model = deepcopy(ann)
 
-    if validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2))
+    has_validation = validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2))
+
+    if has_validation
         valid_data = (permutedims(convert(AbstractArray{Float32,2},valid_data[1])), permutedims(valid_data[2]));
         push!(val_losses, loss(ann, valid_data[1], valid_data[2]));
         best_val_loss = val_losses[1];
@@ -61,12 +63,12 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     end;
 
     cnt = 0
-    while cnt < maxEpochs && train_losses[end] > minLoss && (cnt - best_epoch < maxEpochsVal)
+    while cnt < maxEpochs && train_losses[end] > minLoss && ((!has_validation) || (cnt - best_epoch < maxEpochsVal))
         cnt += 1;
         Flux.train!(loss, ann, [dataset], opt_state);
         push!(train_losses, loss(ann, dataset[1], dataset[2]));
 
-        if validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2))
+        if has_validation
             val_loss = loss(ann, valid_data[1], valid_data[2]);
             push!(validationLosses, val_loss);
 
@@ -82,7 +84,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
         end;
     end;
 
-    if validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2))
+    if has_validation
         return best_model, train_losses, val_losses, test_losses;
     else
         return ann, train_losses, val_losses, test_losses;
@@ -98,4 +100,8 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     #
     # Codigo a desarrollar
     #
+    train_dataset = reshape((inputs,targets), :, 1);
+    valid_data = reshap
+    trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate)
+
 end;
