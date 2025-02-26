@@ -176,6 +176,7 @@ function accuracy(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1}
     return sum(targets .== outputs) / length(targets);
 end;
 
+#ERROR AL EJECUTAR CON UNA MATRIZ DE VALORES BOOLEANOS HINT: un variable global que existe en STATISTICALMEASURES
 function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2})
     #
     # Solo una columna: llamada a funcion anterior tomando como vectores
