@@ -515,27 +515,46 @@ using Random
 using Random:seed!
 
 function crossvalidation(N::Int64, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    v = 1:N;
+    v_repeated = repeat(v, convert(Int64, round(ceil(N/k))));
+    v_sliced = v_repeated[1:N];
+    v_random = Random.shuffle!(v_sliced);
+    return v_random;
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if k < 10
+        print("ERROR, k < 10");
+        return
+    end;
+    v = 1:length(targets);
+    num_true = sum(targets);
+    cross_index = crossvalidation(num_true, k);
+    true_positions = findall(targets);
+    v[true_positions] .= cross_index;
+    return v
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if k < 10
+        print("ERROR, k < 10");
+        return
+    end;    
+    v = 1:size(targets, 1);
+    for j in eachcol(targets)
+        num_true = sum(j);
+        cross_index = crossvalidation(num_true, k);
+        true_positions = findall(targets);
+        v[true_positions] .= cross_index;
+    end
+    return v
+    
 end;
 
 function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    targets_bool = oneHotEncoding(targets)
+    v = crossvalidation(targets_bool, k)
+    return v
 end;
 
 function ANNCrossValidation(topology::AbstractArray{<:Int,1},
