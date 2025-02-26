@@ -243,12 +243,12 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     cnt = 0;
     while cnt < maxEpochs && train_losses[end] > minLoss && ((!has_validation) || (cnt - best_epoch < maxEpochsVal))
         cnt += 1;
-        Flux.train!(loss, ann, [train_datase], opt_state);
-        push!(train_losses, loss(ann, train_datase[1], train_datase[2]));
+        Flux.train!(loss, ann, [train_dataset], opt_state);
+        push!(train_losses, loss(ann, train_dataset[1], train_dataset[2]));
 
         if has_validation
             val_loss = loss(ann, valid_data[1], valid_data[2]);
-            push!(validationLosses, val_loss);
+            push!(val_losses, val_loss);
 
             if val_loss < best_val_loss
                 best_val_loss = val_loss;
