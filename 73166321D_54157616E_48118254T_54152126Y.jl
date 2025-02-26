@@ -192,7 +192,7 @@ using Random
 function holdOut(N::Int, P::Real)
     permutation = Random.randperm(N);
     test_index = permutation[1:(convert(Int64, (round(N*P))))];
-    train_index = permutation[(convert(Int64, (round(N*P)))):end];
+    train_index = permutation[(convert(Int64, (round(N*P))) + 1):end];
     index = (train_index, test_index);
     return index;
 end;
