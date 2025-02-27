@@ -117,27 +117,31 @@ function classifyOutputs(outputs::AbstractArray{<:Real,2}; threshold::Real=0.5)
 end;
 
 function accuracy(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
-    return sum(targets .== outputs) / length(targets);
+    @assert size(targets) == size(outputs)
+    return mean(targets .== outputs)
 end;
 
 function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2})
+    @assert size(targets) == size(outputs)
     if size(outputs, 2) == 1
         return accuracy(outputs[:, 1], targets[:, 1]);
     else
-        classComparison = targets .== outputs;
-        correctClassifications = all(classComparison, dims = 2);
-        accuracy = mean(correctClassifications);
-        
+        mismatches = count(outputs .!= targets, dims = 2)
+        total_samples = size(targets, 1);
+        correct_samples = count(mismatches .== 0) ;
+        accuracy = correct_samples / total_samples;
         return accuracy;
     end;
 end;
 
 function accuracy(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
+    @assert length(targets) == length(outputs)
     outputs = classifyOutputs(outputs; threshold);
     return accuracy(outputs,targets);
 end;
 
 function accuracy(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; threshold::Real=0.5)
+    @assert size(targets) == size(outputs)
     if size(outputs, 2) == 1
         return accuracy(outputs[:,1],targets[:,1]; threshold = threshold);
     else
@@ -211,9 +215,10 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     testDataset::      Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}=(Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2)), falses(0,size(trainingDataset[2],2))),
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20)
-    ann = buildClassANN(size(dataset[1], 2), topology, size(dataset[2], 2), transferFunctions = transferFunctions);
 
     train_dataset = (permutedims(convert(AbstractArray{Float32, 2}, trainingDataset[1])), permutedims(trainingDataset[2]));
+
+    ann = buildClassANN(size(trainingDataset[1], 2), topology, size(trainingDataset[2], 2), transferFunctions = transferFunctions);
 
     loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y);
     
@@ -231,12 +236,12 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     has_validation = validationDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2));
 
     if has_validation
-        valid_data = (permutedims(convert(AbstractArray{Float32,2},valid_data[1])), permutedims(valid_data[2]));
+        valid_data = (permutedims(convert(AbstractArray{Float32,2},validationDataset[1])), permutedims(validationDataset[2]));
         push!(val_losses, loss(ann, valid_data[1], valid_data[2]));
         best_val_loss = val_losses[1];
     end;
     if testDataset[1] != Array{eltype(trainingDataset[1]),2}(undef,0,size(trainingDataset[1],2))
-        test_data = (permutedims(convert(AbstractArray{Float32,2},test_data[1])), permutedims(test_data[2]));
+        test_data = (permutedims(convert(AbstractArray{Float32,2},testDataset[1])), permutedims(testDataset[2]));
         push!(test_losses, loss(ann, test_data[1], test_data[2]));
     end;
 
@@ -280,7 +285,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     validationDataset = (validationDataset[1],reshape(validationDataset[2], :, 1));
     testDataset = (testDataset[1],reshape(testDataset[2], :, 1));
     
-    trainClassANN(topology,trainingDataset,validationDataset,testDataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate,maxEpochsVal = maxEpochsVal);
+    trainClassANN(topology,trainingDataset,validationDataset=validationDataset,testDataset=testDataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate,maxEpochsVal = maxEpochsVal);
 
 end;
 
