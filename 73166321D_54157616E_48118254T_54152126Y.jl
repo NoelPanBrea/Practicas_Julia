@@ -14,7 +14,7 @@ using Flux.Losses
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
     if length(classes) > 2
         return convert(BitArray{2}, hcat([instance .== classes for instance in feature]...)');
-    else
+    else<
         return oneHotEncoding(convert(AbstractArray{Bool,1}, feature .== classes[1]));
     end;
 end;
@@ -124,12 +124,13 @@ end;
 function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2})
     @assert size(targets) == size(outputs)
     if size(outputs, 2) == 1
-        return accuracy(outputs[:, 1], targets[:, 1]);
+
+        return mean(targets[:, 1] .== outputs[:, 1]);
     else
-        mismatches = count(outputs .!= targets, dims = 2)
-        total_samples = size(targets, 1);
-        correct_samples = count(mismatches .== 0) ;
-        accuracy = correct_samples / total_samples;
+        classComparison = targets .== outputs;
+        correctClassifications = all(classComparison, dims = 2);
+        accuracy = mean(correctClassifications);
+        
         return accuracy;
     end;
 end;
@@ -202,11 +203,19 @@ function holdOut(N::Int, P::Real)
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
-    indexNoVal = holdOut(N, Ptest);
-    new_N = indexNoVal[1];
-    new_Pval = (N/new_N)*Pval;
-    indexWithVal = holdOut(new_N, new_Pval);
-    return indexWithVal;
+    trainval_test = holdOut(N, Ptest);
+    train_index = trainval_test[1]; 
+    test_index = trainval_test[2];
+    
+    new_N = length(train_index);
+    new_Pval = Pval / (1 - Ptest);
+
+    train_val = holdOut(new_N, new_Pval);
+
+    new_train_index = train_index[train_val[1]];
+    val_index = train_index[train_val[2]];
+
+    return (new_train_index, val_index, test_index);
 end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1},
