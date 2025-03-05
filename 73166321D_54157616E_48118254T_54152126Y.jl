@@ -14,7 +14,7 @@ using Flux.Losses
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
     if length(classes) > 2
         return convert(BitArray{2}, hcat([instance .== classes for instance in feature]...)');
-    else<
+    else
         return oneHotEncoding(convert(AbstractArray{Bool,1}, feature .== classes[1]));
     end;
 end;
@@ -41,7 +41,7 @@ function calculateZeroMeanNormalizationParameters(dataset::AbstractArray{<:Real,
 end;
 
 function normalizeMinMax!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    min_values, max_values = normalizationParameters[1], normalizationParameters[2];
+    min_values, max_values = normalizationParameters;
     dataset .-= min_values;
     range_values = max_values .- min_values;
 
@@ -57,7 +57,7 @@ end;
 
 function normalizeMinMax(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     new_dataset = copy(dataset);
-    min_values, max_values = normalizationParameters[1], normalizationParameters[2];
+    min_values, max_values = normalizationParameters;
     new_dataset .-= min_values;
     range_values = max_values .- min_values;
 
@@ -72,7 +72,7 @@ function normalizeMinMax(dataset::AbstractArray{<:Real,2})
 end;
 
 function normalizeZeroMean!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    mean_values, desviation_values = normalizationParameters[1], normalizationParameters[2];
+    mean_values, desviation_values = normalizationParameters;
     dataset .-= mean_values;
     dataset ./= desviation_values;
     dataset[:, vec(desviation_values .== 0)] .= 0;
@@ -86,7 +86,7 @@ end;
 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     new_dataset = copy(dataset);
-    mean_values, desviation_values = normalizationParameters[1], normalizationParameters[2];
+    mean_values, desviation_values = normalizationParameters;
 
     new_dataset .-= mean_values;
     new_dataset ./= desviation_values;
@@ -203,9 +203,7 @@ function holdOut(N::Int, P::Real)
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
-    trainval_test = holdOut(N, Ptest);
-    train_index = trainval_test[1]; 
-    test_index = trainval_test[2];
+    train_index, test_index = holdOut(N, Ptest);
     
     new_N = length(train_index);
     new_Pval = Pval / (1 - Ptest);
