@@ -415,22 +415,63 @@ using SymDoME
 
 
 function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}, testInputs::AbstractArray{<:Real,2}, maximumNodes::Int)
-    #
-    # Codigo a desarrollar
-    #
+    trainingInputs = convert(AbstractArray{Float64,2}, trainingDataset[1]);
+    trainingTargets = convert(AbstractArray{Bool,1}, trainingDataset[2]);
+    testInputs = convert(AbstractArray{Float64,2}, testInputs);
+
+    _, _, _, model = dome(trainingInputs, trainingTargets; maximumNodes = maximumNodes);
+
+    return evaluateTree(model, testInputs);
 end;
 
 function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}, testInputs::AbstractArray{<:Real,2}, maximumNodes::Int)
-    #
-    # Codigo a desarrollar
-    #
+    trainingInputs = convert(AbstractArray{Float64,2}, trainingDataset[1]);
+    trainingTargets = convert(AbstractArray{Bool,2}, trainingDataset[2]);
+    testInputs = convert(AbstractArray{Float64,2}, testInputs);
+
+    if size(trainingTargets,2) == 1
+        result = trainClassDoME((trainingInputs, vec(trainingTargets)), testInputs, maximumNodes);
+        return reshape(result, :, 1);
+    end;
+
+    num_classes = size(trainingTargets, 2);
+    result = zeros(Float64, size(testInputs,1), num_classes);
+
+    for i in 1:num_classes
+        class_results = trainClassDoME((trainingInputs, trainingTargets[:,i]), testInputs, maximumNodes);
+
+        result[:,i] = class_results;
+    end;
+
+    return result
 end;
 
 
 function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{<:Any,1}}, testInputs::AbstractArray{<:Real,2}, maximumNodes::Int)
-    #
-    # Codigo a desarrollar
-    #
+    trainingInputs = convert(AbstractArray{Float64,2}, trainingDataset[1]);
+    trainingTargets = trainingDataset[2];
+    testInputs = convert(AbstractArray{Float64,2}, testInputs);
+
+    classes = unique(trainingTargets);
+
+    testOutputs = Array{eltype(trainingTargets),1}(undef, size(testInputs, 1));
+    testOutputsDoME = trainClassDoME((trainingInputs, oneHotEncoding(trainingTargets, classes)), testInputs, maximumNodes);
+    testOutputsBool = classifyOutputs(testOutputsDoME; threshold=0);
+
+    if length(classes) <= 2
+        testOutputsBool = vec(testOutputsBool);
+        testOutputs[testOutputsBool] .= classes[1];
+
+        if length(classes) == 2
+            testOutputs[.!testOutputsBool] .= classes[2];
+        end;
+    else
+        for i in 1:lenght(classes)
+            testOutputs[testOutputsBool[:,i]] .= classes[i];
+        end;
+    end;
+
+    return testOutputs;
 end;
 
 function printConfusionMatrix(outputs::AbstractArray{Bool,1},
