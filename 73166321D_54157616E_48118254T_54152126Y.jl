@@ -9,6 +9,7 @@
 using Statistics
 using Flux
 using Flux.Losses
+using Random
 
 
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
@@ -41,7 +42,7 @@ function calculateZeroMeanNormalizationParameters(dataset::AbstractArray{<:Real,
 end;
 
 function normalizeMinMax!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    min_values, max_values = normalizationParameters[1], normalizationParameters[2];
+    min_values, max_values = normalizationParameters;
     dataset .-= min_values;
     range_values = max_values .- min_values;
 
@@ -57,7 +58,7 @@ end;
 
 function normalizeMinMax(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     new_dataset = copy(dataset);
-    min_values, max_values = normalizationParameters[1], normalizationParameters[2];
+    min_values, max_values = normalizationParameters;
     new_dataset .-= min_values;
     range_values = max_values .- min_values;
 
@@ -72,7 +73,7 @@ function normalizeMinMax(dataset::AbstractArray{<:Real,2})
 end;
 
 function normalizeZeroMean!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    mean_values, desviation_values = normalizationParameters[1], normalizationParameters[2];
+    mean_values, desviation_values = normalizationParameters;
     dataset .-= mean_values;
     dataset ./= desviation_values;
     dataset[:, vec(desviation_values .== 0)] .= 0;
@@ -86,7 +87,7 @@ end;
 
 function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     new_dataset = copy(dataset);
-    mean_values, desviation_values = normalizationParameters[1], normalizationParameters[2];
+    mean_values, desviation_values = normalizationParameters;
 
     new_dataset .-= mean_values;
     new_dataset ./= desviation_values;
@@ -118,7 +119,7 @@ end;
 
 function accuracy(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
     @assert size(targets) == size(outputs)
-    return mean(targets .== outputs)
+    return mean(targets .== outputs);
 end;
 
 function accuracy(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2})
@@ -191,8 +192,6 @@ end;
 # ----------------------------------------------------------------------------------------------
 # ------------------------------------- Ejercicio 3 --------------------------------------------
 # ----------------------------------------------------------------------------------------------
-
-using Random
 
 function holdOut(N::Int, P::Real)
     permutation = Random.randperm(N);
@@ -304,7 +303,6 @@ end;
 # ------------------------------------- Ejercicio 4 --------------------------------------------
 # ----------------------------------------------------------------------------------------------
 
-
 function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
     VP = sum(outputs .& targets);
     VN = sum(.!outputs .& .!targets);
@@ -327,7 +325,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     if VP == 0 & FP == 0  
         valor_predictivo_positivo = 1;
     end;
-    if TN == 0 & FP == 0  
+    if FN == 0 & FP == 0  
         especificidad = 1;
     end;
     if VN == 0 & FN == 0  
@@ -353,11 +351,11 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
         return confusionMatrix(outputs[:,1], targets[:,1], strategy);
     end;
 
-    num_clases = size(outputs, 2);
+    num_classes = size(outputs, 2);
     sensibilidad = zeros(Float64, num_classes);
     especificidad = zeros(Float64, num_classes);
-    valor_predictivo_positivo = zeros(Float64, num_clases);
-    valor_predictivo_negativo = zeros(Float64, num_clases);
+    valor_predictivo_positivo = zeros(Float64, num_classes);
+    valor_predictivo_negativo = zeros(Float64, num_classes);
     f1_score = zeros(Float64, num_classes);
 
     for i in 1:num_classes
@@ -458,15 +456,17 @@ function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, Abstract
     testOutputsDoME = trainClassDoME((trainingInputs, oneHotEncoding(trainingTargets, classes)), testInputs, maximumNodes);
     testOutputsBool = classifyOutputs(testOutputsDoME; threshold=0);
 
-    if length(classes) <= 2
+    num_classes = length(classes);
+    
+    if num_classes <= 2
         testOutputsBool = vec(testOutputsBool);
         testOutputs[testOutputsBool] .= classes[1];
 
-        if length(classes) == 2
+        if num_classes == 2
             testOutputs[.!testOutputsBool] .= classes[2];
         end;
     else
-        for i in 1:lenght(classes)
+        for i in 1:num_classes
             testOutputs[testOutputsBool[:,i]] .= classes[i];
         end;
     end;
