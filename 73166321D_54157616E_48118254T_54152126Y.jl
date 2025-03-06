@@ -15,7 +15,7 @@ using Random
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
     if length(classes) > 2
         return convert(BitArray{2}, hcat([instance .== classes for instance in feature]...)');
-    else<
+    else
         return oneHotEncoding(convert(AbstractArray{Bool,1}, feature .== classes[1]));
     end;
 end;
@@ -202,9 +202,7 @@ function holdOut(N::Int, P::Real)
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
-    trainval_test = holdOut(N, Ptest);
-    train_index = trainval_test[1]; 
-    test_index = trainval_test[2];
+    train_index, test_index = holdOut(N, Ptest);
     
     new_N = length(train_index);
     new_Pval = Pval / (1 - Ptest);
