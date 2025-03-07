@@ -9,13 +9,16 @@ using Flux
 using Flux.Losses
 using Random
 #=
-Signo & exists, but no method is defined for this combination of argument types.
+Se calculan mal los acc, errorRate, recall, specificity, precision, NPV, F1, confMatrix 
+No sé si en binarias y en multiclase o si solo en unas 
+SUPONGO binarias
 =#
+
 function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
-    VP = sum(outputs .& targets);
-    VN = sum(.!outputs .& .!targets);
-    FP = sum(outputs .& .!targets);
-    FN = sum(.!outputs .& targets);
+    VP = sum(outputs .&& targets);
+    VN = sum(.!outputs .&& .!targets);
+    FP = sum(outputs .&& .!targets);
+    FN = sum(.!outputs .&& targets);
 
     matriz_confusion = [VP FP; FN VN];
 
@@ -27,20 +30,20 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     valor_predictivo_negativo = VN / (VN + FN);
     f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
 
-    if VP == 0 & FN == 0  
+    if VP == 0 && FN == 0  
         sensibilidad = 1;
     end;
-    if VP == 0 & FP == 0  
+    if VP == 0 && FP == 0  
         valor_predictivo_positivo = 1;
     end;
-    if FN == 0 & FP == 0  
+    if FN == 0 && FP == 0  
         especificidad = 1;
     end;
-    if VN == 0 & FN == 0  
+    if VN == 0 && FN == 0  
         valor_predictivo_negativo = 1  ;
     end;
 
-    if valor_predictivo_positivo == 0 & sensibilidad == 0
+    if valor_predictivo_positivo == 0 && sensibilidad == 0
         f1_score = 0;
     end;
     return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
@@ -55,7 +58,7 @@ end;
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
     
-    if (size(outputs, 2) != size(targets, 2)) & size(outputs, 2) == 1
+    if (size(outputs, 2) != size(targets, 2)) && size(outputs, 2) == 1
         return confusionMatrix(outputs[:,1], targets[:,1], strategy);
     end;
 
@@ -74,7 +77,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
         sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score = stats[3:end];
     end;
 
-    matriz_confusion = [sum((outputs .== i) .& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
+    matriz_confusion = [sum((outputs .== i) .&& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
 
     instancias_clase = vec(sum(targets, dims=1));
 
@@ -95,7 +98,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     end;
 
     precision = accuracy(outputs, targets);
-    tasa_error = 1 - accuracy_value;
+    tasa_error = 1 - precision;
 
     return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion);
 end;
@@ -116,9 +119,6 @@ function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray
     classes = unique(vcat(targets, outputs));
     return confusionMatrix(outputs, targets, classes, weighted = weighted);
 end;
-
-using SymDoME
-
 
 function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}, testInputs::AbstractArray{<:Real,2}, maximumNodes::Int)
     trainingInputs = convert(AbstractArray{Float64,2}, trainingDataset[1]);
