@@ -8,6 +8,11 @@ DTClassifier  = MLJ.@load DecisionTreeClassifier pkg=DecisionTree verbosity=0
 
 
 function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{<:Any,1}}, crossValidationIndices::Array{Int64,1})
+    #=
+     SVMClassifier(kernel = LIBSVM.Kernel.Polynomial, cost = Float64(C),
+            gamma = Float64(gamma), degree = Int32(degree), coef0 = Float64(coef0));
+    PDF modelType := SVC |
+    =#
     if modelType == :ANN
         # Asegúrate de que 'topology' existe dentro de 'modelHyperparameters'
         if haskey(modelHyperparameters, "topology")
@@ -33,6 +38,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     targets = string.(targets);
     classes = unique(targets);
 
+    #BUCLE DE CROSSVALIDACIÓN | Falta la parte de DoME
     for fold in unique(crossValidationIndices)
         trainIndices = findall(x -> x != fold, crossValidationIndices);
         testIndices = findall(x -> x == fold, crossValidationIndices);
@@ -40,15 +46,16 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         X_train, X_test = inputs[trainIndices, :], inputs[testIndices, :];
         y_train, y_test = targets[trainIndices], targets[testIndices];
 
-        # Creación y entrenamiento del modelo
+        # Creación y entrenamiento del modelo (primero tienen que ser creados y luego entrenados)
+        # Entrenamiento DoME: TrainDoMe()
         if modelType == :SVC
-            model = SVC(C=modelHyperparameters["C"], kernel=modelHyperparameters["kernel"],
-                        degree=modelHyperparameters["degree"], gamma=modelHyperparameters["gamma"],
-                        coef0=modelHyperparameters["coef0"]);
+            model = SVMClassifier(C=modelHyperparameters["C"], kernel=modelHyperparameters["kernel"],
+            degree=modelHyperparameters["degree"], gamma=modelHyperparameters["gamma"],
+            coef0=modelHyperparameters["coef0"]);
         elseif modelType == :DecisionTreeClassifier
-            model = DecisionTreeClassifier(max_depth=modelHyperparameters["max_depth"], random_state=1);
+            model = DTClassifier(max_depth=modelHyperparameters["max_depth"], random_state=1);
         elseif modelType == :KNeighborsClassifier
-            model = KNeighborsClassifier(n_neighbors=modelHyperparameters["n_neighbors"]);
+            model = kNNClassifier(n_neighbors=modelHyperparameters["n_neighbors"]);
         end;
         # Entrenamiento del modelo con los conjuntos de entrenamiento
         fit!(model, X_train, y_train);
