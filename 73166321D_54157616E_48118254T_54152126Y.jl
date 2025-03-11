@@ -370,8 +370,24 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
             valor_predictivo_negativo[i] = valor_predictivo_negativo_n
             f1_score[i] = f1_score_n
         end;
+        
 
-        matriz_confusion = [sum((outputs .== i) .&& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
+        matriz_confusion = zeros(num_classes, num_classes)
+
+        for i in 1:num_classes
+            for j in 1:num_classes
+                outputs_class = outputs[:, j];
+                targets_class = targets[:, j];
+                
+                stats = confusionMatrix(outputs_class, targets_class);
+                matriz_confusion[i, j] = stats[end]
+                
+            end;
+        end;
+
+
+        # SI NO FUNCIONA EL BUCLE DE ARRIBA, PROBAR CON ESTO:
+        # matriz_confusion = [sum((outputs .== i) .&& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
 
         instancias_clase = vec(sum(targets, dims=1));
 
