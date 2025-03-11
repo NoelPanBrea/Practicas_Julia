@@ -31,12 +31,12 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         end;
     end;
 
-    # Inicialización de vectores para resultados de métricas
+    # Inicialización de los 7 vectores para resultados de métricas
     precision, errorRate, sensitivity, specificity, ppv, npv, f1 = ([] for _ in 1:7);
 
     # Conversión de targets a string para compatibilidad con Scikit-Learn
     targets = string.(targets);
-    classes = unique(targets);
+    classes = unique(targets); #No sé para que hay que usarlo, pero lo pone en el PDF
 
     #BUCLE DE CROSSVALIDACIÓN | Falta la parte de DoME
     for fold in unique(crossValidationIndices)
@@ -59,6 +59,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         end;
         # Entrenamiento del modelo con los conjuntos de entrenamiento
         fit!(model, X_train, y_train);
+        # En el PDF pone que hay que usar machine, investigar para qué!
 
         # Realización de predicciones con el conjunto de prueba
         predictions = predict(model, X_test);
@@ -75,7 +76,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         push!(f1, f1s);  
     end;
 
-    # Cálculo de la media y desviación estándar de cada métrica
+    # Cálculo de la media y desviación estándar de cada métrica | Falta añadir una cosa CREO
     result = ((mean(precision), std(precision)), (mean(errorRate), std(errorRate)),
               (mean(sensitivity), std(sensitivity)), (mean(specificity), std(specificity)),
               (mean(ppv), std(ppv)), (mean(npv), std(npv)), (mean(f1), std(f1)));
