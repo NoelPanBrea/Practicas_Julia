@@ -649,7 +649,7 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     numExecutions::Int=50,
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20)
-
+    targets[1] = oneHotEncoding(dataset[1])
 end;
 
 
