@@ -17,7 +17,7 @@ function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
         return
     end;
     len = length(targets);
-    v = 1:len;
+    v = zeros(Int32, len);
     num_true = sum(targets);
     true_positions = findall(targets);
     false_positions = findall(x ->(x==0), targets);
@@ -31,7 +31,7 @@ function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
         print("ERROR, k < 10");
         return
     end;
-    v = 1:size(targets, 1);
+    v = zeros(Int32, size(targets, 1));
     for j in eachcol(targets)
         num_true = sum(j);
         cross_index = crossvalidation(num_true, k);
