@@ -11,7 +11,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     #=
      SVMClassifier(kernel = LIBSVM.Kernel.Polynomial, cost = Float64(C),
             gamma = Float64(gamma), degree = Int32(degree), coef0 = Float64(coef0));
-    PDF modelType := SVC |
+    PDF recomienda para modelType := SVC | ¿por qué? ¿dónde?
     =#
     if modelType == :ANN
         # Asegúrate de que 'topology' existe dentro de 'modelHyperparameters'
