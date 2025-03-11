@@ -675,13 +675,12 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         y_train, y_test = targets[trainIndices], targets[testIndices];
 
         if modelType == :SVC
-            model = SVMClassifier(C=modelHyperparameters["C"], kernel=modelHyperparameters["kernel"],
-            degree=modelHyperparameters["degree"], gamma=modelHyperparameters["gamma"],
-            coef0=modelHyperparameters["coef0"]);
+            model = SVMClassifier(kernel=LIBSVM.Kernel.RadialBasis,
+            cost=Float64(modelHyperparameters["C"]), gamma=Float64(modelHyperparameters["gamma"]));
         elseif modelType == :DecisionTreeClassifier
-            model = DTClassifier(max_depth=modelHyperparameters["max_depth"], random_state=1);
+            model = DTClassifier(max_depth=Float64(modelHyperparameters["max_depth"]), random_state=1);
         elseif modelType == :KNeighborsClassifier
-            model = kNNClassifier(n_neighbors=modelHyperparameters["n_neighbors"]);
+            model = kNNClassifier(n_neighbors=Float64(modelHyperparameters["n_neighbors"]));
         end;
         
         fit!(model, X_train, y_train);
