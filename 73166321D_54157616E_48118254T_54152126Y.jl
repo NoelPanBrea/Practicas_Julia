@@ -731,8 +731,9 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
             # Para DoME, usamos la función trainClassDoME
             maximumNodes = modelHyperparameters["maximumNodes"];
             predictions = trainClassDoME((X_train, y_train), X_test, maximumNodes);
-            
+        
         elseif modelType == :SVC
+            
             # Para SVM, configuramos según el tipo de kernel
             kernel_type = modelHyperparameters["kernel"];
             C = modelHyperparameters["C"];
@@ -769,8 +770,8 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
                     coef0 = Float64(coef0),
                     degree = Int32(degree)
                 )
-            end
-            
+            end;
+        
             # Crear machine, entrenar y predecir
             mach = machine(model, MLJ.table(X_train), categorical(y_train));
             MLJ.fit!(mach, verbosity=0);
