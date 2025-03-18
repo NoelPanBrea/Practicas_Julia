@@ -20,7 +20,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     FP = sum(outputs .&& .!targets);
     FN = sum(.!outputs .&& targets);
 
-    matriz_confusion = [VP FP; FN VN];
+    matriz_confusion = [VP FN; FP VN];
 
     precision = (VN + VP) / (VN + VP + FN + FP);
     tasa_error = (FN + FP) / (VN + VP + FN + FP);
