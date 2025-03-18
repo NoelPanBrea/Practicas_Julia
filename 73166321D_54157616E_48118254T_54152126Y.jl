@@ -352,8 +352,9 @@ function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArra
     confusionMatrix(new_outputs, targets);
 end;
 
+
+
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    
     if size(outputs, 2) == 1 && size(targets, 2) == 1
         return confusionMatrix(outputs[:,1], targets[:,1]);
     end;
@@ -371,31 +372,12 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
             targets_class = targets[:, i];
             
             stats = confusionMatrix(outputs_class, targets_class);
-            sensibilidad_n, especificidad_n, valor_predictivo_positivo_n, valor_predictivo_negativo_n, f1_score_n = stats[3:end];
-            sensibilidad[i] = sensibilidad_n
-            especificidad[i] = especificidad_n
-            valor_predictivo_positivo[i] = valor_predictivo_positivo_n
-            valor_predictivo_negativo[i] = valor_predictivo_negativo_n
-            f1_score[i] = f1_score_n
+            _, _, sensibilidad[i], especificidad[i], valor_predictivo_positivo[i], 
+            valor_predictivo_negativo[i], f1_score[i] = stats
         end;
-        
-
-        matriz_confusion = zeros(num_classes, num_classes)
-
-        for i in 1:num_classes
-            for j in 1:num_classes
-                outputs_class = outputs[:, j];
-                targets_class = targets[:, j];
-                
-                stats = confusionMatrix(outputs_class, targets_class);
-                matriz_confusion[i, j] = stats[end]
-                
-            end;
-        end;
-
-
-        # SI NO FUNCIONA EL BUCLE DE ARRIBA, PROBAR CON ESTO:
-        # matriz_confusion = [sum((outputs .== i) .&& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
+  
+        matriz_confusion = [sum((outputs[:, i] .== 1) .&& (targets[:, j] .== 1)) 
+                            for i in 1:num_classes, j in 1:num_classes]
 
         instancias_clase = vec(sum(targets, dims=1));
 
@@ -405,22 +387,20 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
             valor_predictivo_positivo_medio = sum(valor_predictivo_positivo .* instancias_clase) / sum(instancias_clase);
             valor_predictivo_negativo_medio = sum(valor_predictivo_negativo .* instancias_clase) / sum(instancias_clase);
             f1_score_medio = sum(f1_score .* instancias_clase) / sum(instancias_clase);
-
         else
             sensibilidad_media = mean(sensibilidad);
             especificidad_media = mean(especificidad);
             valor_predictivo_positivo_medio = mean(valor_predictivo_positivo);
             valor_predictivo_negativo_medio = mean(valor_predictivo_negativo);
-            f1_score_medio = mean(f1_score1);
-            
+            f1_score_medio = mean(f1_score);
         end;
 
         precision = accuracy(outputs, targets);
         tasa_error = 1 - precision;
 
-        return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion);
+        return (precision, tasa_error, sensibilidad_media, especificidad_media, valor_predictivo_positivo_medio, valor_predictivo_negativo_medio, f1_score_medio, matriz_confusion);
     end;
-    end;
+end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; threshold::Real=0.5, weighted::Bool=true)
     new_outputs = classifyOutputs(outputs, threshold = threshold);
