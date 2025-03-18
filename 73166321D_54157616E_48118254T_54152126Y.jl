@@ -309,29 +309,37 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
 
     matriz_confusion = [VP FP; FN VN];
 
-    precision = (VN + VP) / (VN + VP + FN + FP);
-    tasa_error = (FN + FP) / (VN + VP + FN + FP);
-    sensibilidad = VP / (FN + VP);
-    especificidad = VN / (FP + VN);
-    valor_predictivo_positivo = VP / (VP + FP);
-    valor_predictivo_negativo = VN / (VN + FN);
-    f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
-
     if VP == 0 && FN == 0  
         sensibilidad = 1;
+    else
+        sensibilidad = VP / (FN + VP);
     end;
+    
     if VP == 0 && FP == 0  
         valor_predictivo_positivo = 1;
+    else
+        valor_predictivo_positivo = VP / (VP + FP);
     end;
+
     if VN == 0 && FP == 0  
         especificidad = 1;
+    else
+        especificidad = VN / (FP + VN);
     end;
+
     if VN == 0 && FN == 0  
         valor_predictivo_negativo = 1  ;
+    else
+        valor_predictivo_negativo = VN / (VN + FN);
     end;
+
+    precision = (VN + VP) / (VN + VP + FN + FP);
+    tasa_error = (FN + FP) / (VN + VP + FN + FP);
 
     if valor_predictivo_positivo == 0 && sensibilidad == 0
         f1_score = 0;
+    else
+        f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
     end;
 
     return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
