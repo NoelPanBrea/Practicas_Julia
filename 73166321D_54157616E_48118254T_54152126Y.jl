@@ -604,7 +604,7 @@ function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
         return
     end;
     len = length(targets);
-    v = zeros(Int32, len);
+    v = zeros(Int64, len);
     num_true = sum(targets);
     num_false = len - num_true;
     if num_true < k || l < k
@@ -623,7 +623,7 @@ function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
         print("ERROR, k < 10");
         return
     end;
-    v = zeros(Int32, size(targets, 1));
+    v = zeros(Int64, size(targets, 1));
     for j in eachcol(targets)
         num_true = sum(j);
         if num_true < k
@@ -649,7 +649,22 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     numExecutions::Int=50,
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20)
-    targets[1] = oneHotEncoding(dataset[1])
+    classes = unique(dataset[2]);
+    targets = unique(dataset[2], classes);
+    folds = maximum(crossvalidation(targets, folds));
+    v = crossvalidation(targets, folds)
+    precision = 0;
+    tasa_de_error = 0;
+    sensibilidad = 0;
+    especificidad = 0;
+    valor_predictivo_positivo = 0;
+    valor_predictivo_negativo = 0;
+    F1 = 0;
+    mat = Matrix(0);
+    while cnt < folds
+        cnt += 1;
+    end;
+
 end;
 
 
