@@ -307,7 +307,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     FP = sum(outputs .&& .!targets);
     FN = sum(.!outputs .&& targets);
 
-    matriz_confusion = [VP FP; FN VN];
+    matriz_confusion = [VN FP; FN VP];
 
     if VP == 0 && FN == 0  
         sensibilidad = 1;
@@ -409,8 +409,8 @@ end;
 
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1}; weighted::Bool=true)
     @assert(all([in(label, classes) for label in vcat(targets, outputs)]));
-    bool_outputs = oneHotEncoding(outputs, classes);
-    bool_targets = oneHotEncoding(targets, classes);
+    bool_outputs = oneHotEncoding(outputs);
+    bool_targets = oneHotEncoding(targets);
     return confusionMatrix(bool_outputs, bool_targets, weighted = weighted);
 end;
 
