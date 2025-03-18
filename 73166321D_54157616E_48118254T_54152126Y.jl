@@ -307,31 +307,39 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     FP = sum(outputs .&& .!targets);
     FN = sum(.!outputs .&& targets);
 
-    matriz_confusion = [VP FP; FN VN];
-
-    precision = (VN + VP) / (VN + VP + FN + FP);
-    tasa_error = (FN + FP) / (VN + VP + FN + FP);
-    sensibilidad = VP / (FN + VP);
-    especificidad = VN / (FP + VN);
-    valor_predictivo_positivo = VP / (VP + FP);
-    valor_predictivo_negativo = VN / (VN + FN);
-    f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
+    matriz_confusion = [VN FP; FN VP];
 
     if VP == 0 && FN == 0  
         sensibilidad = 1;
+    else
+        sensibilidad = VP / (FN + VP);
     end;
+    
     if VP == 0 && FP == 0  
         valor_predictivo_positivo = 1;
+    else
+        valor_predictivo_positivo = VP / (VP + FP);
     end;
+
     if VN == 0 && FP == 0  
         especificidad = 1;
+    else
+        especificidad = VN / (FP + VN);
     end;
+
     if VN == 0 && FN == 0  
         valor_predictivo_negativo = 1  ;
+    else
+        valor_predictivo_negativo = VN / (VN + FN);
     end;
+
+    precision = (VN + VP) / (VN + VP + FN + FP);
+    tasa_error = (FN + FP) / (VN + VP + FN + FP);
 
     if valor_predictivo_positivo == 0 && sensibilidad == 0
         f1_score = 0;
+    else
+        f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
     end;
 
     return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
@@ -344,8 +352,9 @@ function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArra
     confusionMatrix(new_outputs, targets);
 end;
 
+
+
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    
     if size(outputs, 2) == 1 && size(targets, 2) == 1
         return confusionMatrix(outputs[:,1], targets[:,1]);
     end;
@@ -363,31 +372,12 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
             targets_class = targets[:, i];
             
             stats = confusionMatrix(outputs_class, targets_class);
-            sensibilidad_n, especificidad_n, valor_predictivo_positivo_n, valor_predictivo_negativo_n, f1_score_n = stats[3:end];
-            sensibilidad[i] = sensibilidad_n
-            especificidad[i] = especificidad_n
-            valor_predictivo_positivo[i] = valor_predictivo_positivo_n
-            valor_predictivo_negativo[i] = valor_predictivo_negativo_n
-            f1_score[i] = f1_score_n
+            _, _, sensibilidad[i], especificidad[i], valor_predictivo_positivo[i], 
+            valor_predictivo_negativo[i], f1_score[i] = stats
         end;
-        
-
-        matriz_confusion = zeros(num_classes, num_classes)
-
-        for i in 1:num_classes
-            for j in 1:num_classes
-                outputs_class = outputs[:, j];
-                targets_class = targets[:, j];
-                
-                stats = confusionMatrix(outputs_class, targets_class);
-                matriz_confusion[i, j] = stats[end]
-                
-            end;
-        end;
-
-
-        # SI NO FUNCIONA EL BUCLE DE ARRIBA, PROBAR CON ESTO:
-        # matriz_confusion = [sum((outputs .== i) .&& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
+  
+        matriz_confusion = [sum((outputs[:, i] .== 1) .&& (targets[:, j] .== 1)) 
+                            for i in 1:num_classes, j in 1:num_classes]
 
         instancias_clase = vec(sum(targets, dims=1));
 
@@ -397,22 +387,20 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
             valor_predictivo_positivo_medio = sum(valor_predictivo_positivo .* instancias_clase) / sum(instancias_clase);
             valor_predictivo_negativo_medio = sum(valor_predictivo_negativo .* instancias_clase) / sum(instancias_clase);
             f1_score_medio = sum(f1_score .* instancias_clase) / sum(instancias_clase);
-
         else
             sensibilidad_media = mean(sensibilidad);
             especificidad_media = mean(especificidad);
             valor_predictivo_positivo_medio = mean(valor_predictivo_positivo);
             valor_predictivo_negativo_medio = mean(valor_predictivo_negativo);
-            f1_score_medio = mean(f1_score1);
-            
+            f1_score_medio = mean(f1_score);
         end;
 
         precision = accuracy(outputs, targets);
         tasa_error = 1 - precision;
 
-        return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion);
+        return (precision, tasa_error, sensibilidad_media, especificidad_media, valor_predictivo_positivo_medio, valor_predictivo_negativo_medio, f1_score_medio, matriz_confusion);
     end;
-    end;
+end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; threshold::Real=0.5, weighted::Bool=true)
     new_outputs = classifyOutputs(outputs, threshold = threshold);
@@ -421,8 +409,8 @@ end;
 
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1}; weighted::Bool=true)
     @assert(all([in(label, classes) for label in vcat(targets, outputs)]));
-    bool_outputs = oneHotEncoding(outputs, classes);
-    bool_targets = oneHotEncoding(targets, classes);
+    bool_outputs = oneHotEncoding(outputs);
+    bool_targets = oneHotEncoding(targets);
     return confusionMatrix(bool_outputs, bool_targets, weighted = weighted);
 end;
 
@@ -682,11 +670,14 @@ DTClassifier  = MLJ.@load DecisionTreeClassifier pkg=DecisionTree verbosity=0
 
 
 function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{<:Any,1}}, crossValidationIndices::Array{Int64,1})
+    # Extraer datos del dataset
+    inputs, targets = dataset;
+    
+    # Si el modelo es una Red Neuronal Artificial, llamar a la función correspondiente
     if modelType == :ANN
-     
         if haskey(modelHyperparameters, "topology")
             topology = modelHyperparameters["topology"];
-          
+            
             return ANNCrossValidation(topology, inputs, targets, crossValidationIndices;
                 numExecutions = get(modelHyperparameters, "numExecutions", 50),
                 transferFunctions = get(modelHyperparameters, "transferFunctions", fill(σ, length(topology))),
@@ -695,49 +686,139 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
                 learningRate = get(modelHyperparameters, "learningRate", 0.01),
                 validationRatio = get(modelHyperparameters, "validationRatio", 0),
                 maxEpochsVal = get(modelHyperparameters, "maxEpochsVal", 20));
-        else
-            error("Hiperparámetro 'topology' no encontrado en 'modelHyperparameters'.");
         end;
     end;
 
-    precision, errorRate, sensitivity, specificity, ppv, npv, f1 = ([] for _ in 1:7);
+    # Vectores para almacenar métricas de cada fold
+    accuracy = Float64[];
+    error_rate = Float64[];
+    sensitivity = Float64[];
+    specificity = Float64[];
+    ppv = Float64[];
+    npv = Float64[];
+    f1 = Float64[];
 
+    # Convertir el vector de salidas a strings
     targets = string.(targets);
+    
+    # Calcular las clases únicas
     classes = unique(targets);
-
+    
+    # Inicializar la matriz de confusión
+    confusion_matrix = zeros(Int64, length(classes), length(classes));
+    
+    # Para cada fold en la validación cruzada
     for fold in unique(crossValidationIndices)
+        # Índices para entrenamiento y test
         trainIndices = findall(x -> x != fold, crossValidationIndices);
         testIndices = findall(x -> x == fold, crossValidationIndices);
-
-        X_train, X_test = inputs[trainIndices, :], inputs[testIndices, :];
-        y_train, y_test = targets[trainIndices], targets[testIndices];
-
-        if modelType == :SVC
-            model = SVMClassifier(kernel=LIBSVM.Kernel.RadialBasis,
-            cost=Float64(modelHyperparameters["C"]), gamma=Float64(modelHyperparameters["gamma"]));
-        elseif modelType == :DecisionTreeClassifier
-            model = DTClassifier(max_depth=Float64(modelHyperparameters["max_depth"]), random_state=1);
-        elseif modelType == :KNeighborsClassifier
-            model = kNNClassifier(n_neighbors=Float64(modelHyperparameters["n_neighbors"]));
-        end;
         
-        fit!(model, X_train, y_train);
-    
-        predictions = predict(model, X_test);
-       
-        acc, fail_rate, sensitivities, specificities, ppvs, npvs, f1s = confusionMatrix(y_test, predictions);
-
-        push!(precision, acc);
-        push!(errorRate, fail_rate);
-        push!(sensitivity, sensitivities);
-        push!(specificity, specificities);
-        push!(ppv, ppvs);
-        push!(npv, npvs);
-        push!(f1, f1s);  
+        # Extraer datos de entrenamiento y test
+        X_train = inputs[trainIndices, :];
+        y_train = targets[trainIndices];
+        X_test = inputs[testIndices, :];
+        y_test = targets[testIndices];
+        
+        # Variable para almacenar predicciones
+        predictions = nothing;
+        
+        if modelType == :DoME
+            # Para DoME, usamos la función trainClassDoME
+            maximumNodes = modelHyperparameters["maximumNodes"];
+            predictions = trainClassDoME((X_train, y_train), X_test, maximumNodes);
+        #ERROR EN MODELO SVC
+        elseif modelType == :SVC
+            
+            # Para SVM, configuramos según el tipo de kernel
+            kernel_type = modelHyperparameters["kernel"];
+            C = modelHyperparameters["C"];
+            
+            if kernel_type == "linear"
+                model = SVMClassifier(
+                    kernel = LIBSVM.Kernel.Linear,
+                    cost = Float64(C)
+                )
+            elseif kernel_type == "rbf"
+                gamma = modelHyperparameters["gamma"];
+                model = SVMClassifier(
+                    kernel = LIBSVM.Kernel.RadialBasis,
+                    cost = Float64(C),
+                    gamma = Float64(gamma)
+                )
+            elseif kernel_type == "sigmoid"
+                gamma = modelHyperparameters["gamma"];
+                coef0 = modelHyperparameters["coef0"];
+                model = SVMClassifier(
+                    kernel = LIBSVM.Kernel.Sigmoid,
+                    cost = Float64(C),
+                    gamma = Float64(gamma),
+                    coef0 = Float64(coef0)
+                )
+            elseif kernel_type == "poly"
+                gamma = modelHyperparameters["gamma"];
+                coef0 = modelHyperparameters["coef0"];
+                degree = modelHyperparameters["degree"];
+                model = SVMClassifier(
+                    kernel = LIBSVM.Kernel.Polynomial,
+                    cost = Float64(C),
+                    gamma = Float64(gamma),
+                    coef0 = Float64(coef0),
+                    degree = Int32(degree)
+                )
+            end;
+        
+            # Crear machine, entrenar y predecir
+            mach = machine(model, MLJ.table(X_train), categorical(y_train));
+            MLJ.fit!(mach, verbosity=0);
+            predictions = MLJ.predict(mach, MLJ.table(X_test));
+            
+        elseif modelType == :DecisionTreeClassifier
+            # Para árboles de decisión
+            max_depth = modelHyperparameters["max_depth"];
+            model = DTClassifier(max_depth = max_depth, rng = Random.MersenneTwister(1));
+            
+            mach = machine(model, MLJ.table(X_train), categorical(y_train));
+            MLJ.fit!(mach, verbosity=0);
+            pred = MLJ.predict(mach, MLJ.table(X_test));
+            predictions = mode.(pred);
+            
+        elseif modelType == :KNeighborsClassifier
+            # Para kNN
+            K = modelHyperparameters["n_neighbors"];
+            model = kNNClassifier(K = K);
+            
+            mach = machine(model, MLJ.table(X_train), categorical(y_train));
+            MLJ.fit!(mach, verbosity=0);
+            pred = MLJ.predict(mach, MLJ.table(X_test));
+            predictions = mode.(pred);
+        end
+        
+        # Calcular métricas y matriz de confusión para este fold
+        fold_metrics = confusionMatrix(predictions, y_test, classes);
+        
+        # Almacenar métricas
+        push!(accuracy, fold_metrics[1]);
+        push!(error_rate, fold_metrics[2]);
+        push!(sensitivity, fold_metrics[3]);
+        push!(specificity, fold_metrics[4]);
+        push!(ppv, fold_metrics[5]);
+        push!(npv, fold_metrics[6]);
+        push!(f1, fold_metrics[7]);
+        
+        # Actualizar matriz de confusión global
+        confusion_matrix += fold_metrics[8];
     end;
-
-    result = ((mean(precision), std(precision)), (mean(errorRate), std(errorRate)),
-              (mean(sensitivity), std(sensitivity)), (mean(specificity), std(specificity)),
-              (mean(ppv), std(ppv)), (mean(npv), std(npv)), (mean(f1), std(f1)));
-    return result;
+    
+    # Calcular estadísticas para cada métrica
+    accuracy_stats = (mean(accuracy), std(accuracy));
+    error_rate_stats = (mean(error_rate), std(error_rate));
+    sensitivity_stats = (mean(sensitivity), std(sensitivity));
+    specificity_stats = (mean(specificity), std(specificity));
+    ppv_stats = (mean(ppv), std(ppv));
+    npv_stats = (mean(npv), std(npv));
+    f1_stats = (mean(f1), std(f1));
+    
+    # Devolver las métricas y la matriz de confusión
+    return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, 
+           ppv_stats, npv_stats, f1_stats, confusion_matrix;
 end;
