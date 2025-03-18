@@ -711,7 +711,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
             # Para DoME, usamos la función trainClassDoME
             maximumNodes = modelHyperparameters["maximumNodes"];
             predictions = trainClassDoME((X_train, y_train), X_test, maximumNodes);
-        
+        #ERROR EN MODELO SVC
         elseif modelType == :SVC
             
             # Para SVM, configuramos según el tipo de kernel
