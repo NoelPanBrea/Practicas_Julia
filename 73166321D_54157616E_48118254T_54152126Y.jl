@@ -638,7 +638,9 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20)
     classes = unique(dataset[2]);
+    num_classes = length(classes)
     targets = unique(dataset[2], classes);
+    inputs = dataset[1];
     folds = maximum(crossvalidation(targets, folds));
     v = crossvalidation(targets, folds)
     precision = 0;
@@ -651,6 +653,9 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     mat = Matrix(0);
     while cnt < folds
         cnt += 1;
+        array = AbstractArray{Int64}(num_classes, num_classes, numExecutions)
+        fold_dataset = (input[findall(x -> (x == k), dataset[1])], targets[findall(x -> (x == k), dataset[1])])
+
     end;
 
 end;
