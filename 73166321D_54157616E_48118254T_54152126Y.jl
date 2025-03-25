@@ -343,16 +343,12 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     end;
 
     return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
-    
-
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
     new_outputs = classifyOutputs(outputs, threshold = threshold);
     confusionMatrix(new_outputs, targets);
 end;
-
-
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
     if size(outputs, 2) == 1 && size(targets, 2) == 1
@@ -378,7 +374,8 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
   
         matriz_confusion = [sum((outputs[:, i] .== 1) .&& (targets[:, j] .== 1)) 
                             for i in 1:num_classes, j in 1:num_classes]
-
+        matriz_confusion = permutedims(matriz_confusion);
+        
         instancias_clase = vec(sum(targets, dims=1));
 
         if weighted == true
