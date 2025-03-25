@@ -1,9 +1,6 @@
 using Random
 using Random:seed!
-#=
-Corregir crossvalidation, da índices erróneos 
-Posible fallo en línea 8 de crossvalidation(N::Int64, k::Int64)
-=#
+
 function crossvalidation(N::Int64, k::Int64)
     v = 1:k;
     v_repeated = repeat(v, convert(Int64, ceil(N/k)));
@@ -12,40 +9,56 @@ function crossvalidation(N::Int64, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
-    if k < 10
-        print("ERROR, k < 10");
-        return
-    end;
     len = length(targets);
-    v = zeros(Int32, len);
+
+    if k >= 1
+        error("ERROR: k debe ser al menos 1");
+    end;
+    
+    v = zeros(Int64, len);
+    
     num_true = sum(targets);
+    num_false = len - num_true;
+
+    if num_true < k || num_false < k
+        error("Error: no hay suficientes patrones de cada clase");
+    end;
+
     true_positions = findall(targets);
-    false_positions = findall(x ->(x==0), targets);
+    false_positions = findall(.!targets);
+
     v[true_positions] .= crossvalidation(num_true, k);
-    v[false_positions] .= crossvalidation(len - num_true, k);
+    v[false_positions] .= crossvalidation(num_false, k);
+    #Para hacerlo en una línea foreach(((pos, n),) -> v[pos] .= crossvalidation(n, k), [(true_positions, num_true), (false_positions, num_false)])
     return v
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
-    if k < 10
-        print("ERROR, k < 10");
-        return
+    num_patterns = size(targets, 1);
+    num_classes = size(targets,2);
+
+    if k >= 1
+        error("ERROR: k debe ser al menos 1");
     end;
-    v = zeros(Int32, size(targets, 1));
-    for j in eachcol(targets)
-        num_true = sum(j);
-        cross_index = crossvalidation(num_true, k);
-        true_positions = findall(targets);
-        v[true_positions] .= cross_index;
+
+    v = zeros(Int64, num_patterns);
+
+    for j in 1:num_classes
+        class_positions = findall(targets[:,j]);
+
+        num_class_patterns = length(class_positions)
+        if num_class_patterns < k
+            error("Error no hay suficientes patrones para la clase $j");
+        end;
+
+        v[class_positions] = crossvalidation(num_class_patterns,k);
     end;
     return v
-    
 end;
 
 function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
-    targets_bool = oneHotEncoding(targets)
-    v = crossvalidation(targets_bool, k)
-    return v
+    targets_bool = oneHotEncoding(targets);
+    return crossvalidation(targets_bool, k)
 end;
 
 function ANNCrossValidation(topology::AbstractArray{<:Int,1},

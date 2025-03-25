@@ -20,32 +20,41 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     FP = sum(outputs .&& .!targets);
     FN = sum(.!outputs .&& targets);
 
-    matriz_confusion = [VP FN; FP VN];
-
-    precision = (VN + VP) / (VN + VP + FN + FP);
-    tasa_error = (FN + FP) / (VN + VP + FN + FP);
-    sensibilidad = VP / (FN + VP);
-    especificidad = VN / (FP + VN);
-    valor_predictivo_positivo = VP / (VP + FP);
-    valor_predictivo_negativo = VN / (VN + FN);
-    f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
+    matriz_confusion = [VN FP; FN VP];
 
     if VP == 0 && FN == 0  
         sensibilidad = 1;
+    else
+        sensibilidad = VP / (FN + VP);
     end;
+    
     if VP == 0 && FP == 0  
         valor_predictivo_positivo = 1;
+    else
+        valor_predictivo_positivo = VP / (VP + FP);
     end;
-    if FN == 0 && FP == 0  
+
+    if VN == 0 && FP == 0  
         especificidad = 1;
+    else
+        especificidad = VN / (FP + VN);
     end;
+
     if VN == 0 && FN == 0  
         valor_predictivo_negativo = 1  ;
+    else
+        valor_predictivo_negativo = VN / (VN + FN);
     end;
+
+    precision = (VN + VP) / (VN + VP + FN + FP);
+    tasa_error = (FN + FP) / (VN + VP + FN + FP);
 
     if valor_predictivo_positivo == 0 && sensibilidad == 0
         f1_score = 0;
+    else
+        f1_score = (2*valor_predictivo_positivo*sensibilidad)/ (valor_predictivo_positivo + sensibilidad);
     end;
+
     return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion)
     
 
@@ -56,62 +65,66 @@ function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArra
     confusionMatrix(new_outputs, targets);
 end;
 
+
+
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    
-    if (size(outputs, 2) != size(targets, 2)) && size(outputs, 2) == 1
-        return confusionMatrix(outputs[:,1], targets[:,1], strategy);
+    if size(outputs, 2) == 1 && size(targets, 2) == 1
+        return confusionMatrix(outputs[:,1], targets[:,1]);
     end;
 
-    num_classes = size(outputs, 2);
-    sensibilidad = zeros(Float64, num_classes);
-    especificidad = zeros(Float64, num_classes);
-    valor_predictivo_positivo = zeros(Float64, num_classes);
-    valor_predictivo_negativo = zeros(Float64, num_classes);
-    f1_score = zeros(Float64, num_classes);
+    if size(outputs, 2) > 2 && size(targets, 2) > 2
+        num_classes = size(outputs, 2);
+        sensibilidad = zeros(Float64, num_classes);
+        especificidad = zeros(Float64, num_classes);
+        valor_predictivo_positivo = zeros(Float64, num_classes);
+        valor_predictivo_negativo = zeros(Float64, num_classes);
+        f1_score = zeros(Float64, num_classes);
 
-    for i in 1:num_classes
-        outputs_class = outputs[:, i];
-        targets_class = targets[:, i];
         
-        stats = confusionMatrix(outputs_class, targets_class);
-        sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score = stats[3:end];
+        for i in 1:num_classes
+            outputs_class = outputs[:, i];
+            targets_class = targets[:, i];
+            
+            stats = confusionMatrix(outputs_class, targets_class);
+            _, _, sensibilidad[i], especificidad[i], valor_predictivo_positivo[i], 
+            valor_predictivo_negativo[i], f1_score[i] = stats
+        end;
+  
+        matriz_confusion = [sum((outputs[:, i] .== 1) .&& (targets[:, j] .== 1)) 
+                            for i in 1:num_classes, j in 1:num_classes]
+
+        instancias_clase = vec(sum(targets, dims=1));
+
+        if weighted == true
+            sensibilidad_media = sum(sensibilidad .* instancias_clase) / sum(instancias_clase);
+            especificidad_media = sum(especificidad .* instancias_clase) / sum(instancias_clase);
+            valor_predictivo_positivo_medio = sum(valor_predictivo_positivo .* instancias_clase) / sum(instancias_clase);
+            valor_predictivo_negativo_medio = sum(valor_predictivo_negativo .* instancias_clase) / sum(instancias_clase);
+            f1_score_medio = sum(f1_score .* instancias_clase) / sum(instancias_clase);
+        else
+            sensibilidad_media = mean(sensibilidad);
+            especificidad_media = mean(especificidad);
+            valor_predictivo_positivo_medio = mean(valor_predictivo_positivo);
+            valor_predictivo_negativo_medio = mean(valor_predictivo_negativo);
+            f1_score_medio = mean(f1_score);
+        end;
+
+        precision = accuracy(outputs, targets);
+        tasa_error = 1 - precision;
+
+        return (precision, tasa_error, sensibilidad_media, especificidad_media, valor_predictivo_positivo_medio, valor_predictivo_negativo_medio, f1_score_medio, matriz_confusion);
     end;
-
-    matriz_confusion = [sum((outputs .== i) .&& (targets .== j)) for i in 1:num_classes, j in 1:num_classes];
-
-    instancias_clase = vec(sum(targets, dims=1));
-
-    if weighted == true
-        sensibilidad_media = sum(sensibilidad .* instancias_clase) / sum(instancias_clase);
-        especificidad_media = sum(especificidad .* instancias_clase) / sum(instancias_clase);
-        valor_predictivo_positivo_medio = sum(valor_predictivo_positivo .* instancias_clase) / sum(instancias_clase);
-        valor_predictivo_negativo_medio = sum(valor_predictivo_negativo .* instancias_clase) / sum(instancias_clase);
-        f1_score_medio = sum(f1_score .* instancias_clase) / sum(instancias_clase);
-
-    else
-        sensibilidad_media = mean(sensibilidad);
-        especificidad_media = mean(especificidad);
-        valor_predictivo_positivo_medio = mean(valor_predictivo_positivo);
-        valor_predictivo_negativo_medio = mean(valor_predictivo_negativo);
-        f1_score_medio = mean(f1_score1);
-        
-    end;
-
-    precision = accuracy(outputs, targets);
-    tasa_error = 1 - precision;
-
-    return (precision, tasa_error, sensibilidad, especificidad, valor_predictivo_positivo, valor_predictivo_negativo, f1_score, matriz_confusion);
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; threshold::Real=0.5, weighted::Bool=true)
     new_outputs = classifyOutputs(outputs, threshold = threshold);
-    confusionMatrix(new_outputs, targets, weighted = weighted);
+    return confusionMatrix(new_outputs, targets, weighted = weighted);
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1}; weighted::Bool=true)
     @assert(all([in(label, classes) for label in vcat(targets, outputs)]));
-    bool_outputs = oneHotEncoding(outputs, classes);
-    bool_targets = oneHotEncoding(targets, classes);
+    bool_outputs = oneHotEncoding(outputs);
+    bool_targets = oneHotEncoding(targets);
     return confusionMatrix(bool_outputs, bool_targets, weighted = weighted);
 end;
 
