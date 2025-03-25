@@ -586,7 +586,7 @@ end;
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
     len = length(targets);
 
-    if k >= 1
+    if k < 1
         error("ERROR: k debe ser al menos 1");
     end;
     
@@ -612,7 +612,7 @@ function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
     num_patterns = size(targets, 1);
     num_classes = size(targets,2);
 
-    if k >= 1
+    if k < 1
         error("ERROR: k debe ser al menos 1");
     end;
 
