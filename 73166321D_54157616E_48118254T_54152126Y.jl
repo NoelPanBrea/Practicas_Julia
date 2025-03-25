@@ -595,7 +595,7 @@ function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
     num_true = sum(targets);
     num_false = len - num_true;
 
-    if num_true < k || num_false < k
+    if (num_true < k & num_true < 10) || (num_false < k & num_false < 10)
         error("Error: no hay suficientes patrones de cada clase");
     end;
 
@@ -622,7 +622,7 @@ function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
         class_positions = findall(targets[:,j]);
 
         num_class_patterns = length(class_positions)
-        if num_class_patterns < k
+        if num_class_patterns < k & num_class_patterns < 10
             error("Error no hay suficientes patrones para la clase $j");
         end;
 
