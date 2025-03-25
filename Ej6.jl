@@ -7,10 +7,33 @@ kNNClassifier = MLJ.@load KNNClassifier pkg=NearestNeighborModels verbosity=0
 DTClassifier  = MLJ.@load DecisionTreeClassifier pkg=DecisionTree verbosity=0
 
 function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{<:Any,1}}, crossValidationIndices::Array{Int64,1})
-    # Extraer datos del dataset
+    #=
+    PARÁMETROS
+    ----------
+    modelType::Symbol -> Tipo de modelo a entrenar, es un símbolo que representa el algoritmo
+    modelHyperparameters::Dict -> Diccionario de hiperparámetros específicos del modelo
+    dataset:: Tuple -> Conjunto de datos con entradas y objetivos
+    crossValidationIndices:: Array -> índices para realizar validación cruzada
+
+    PURPOSE
+    --------
+    Realizar validación cruzada para diferentes tipos de modelos de Machine Learning
+    Calcular múltiples métricas de rendimiento
+    Generar una matriz de confusion
+    =#
+    
+    #= 
+    Extraer datos del dataset
+    inputs: matriz de características de entrada
+        Fila -> muestras Columnas -> características
+    targets: vector de etiquetas/salidas deseadas
+    =#
     inputs, targets = dataset;
     
-    # Si el modelo es una Red Neuronal Artificial, llamar a la función correspondiente
+    #= 
+    Si el modelo es una Red Neuronal Artificial, llamar a la función correspondiente
+    Usa los hiperparámetros correspondientes a ANN
+    =#
     if modelType == :ANN
         if haskey(modelHyperparameters, "topology")
             topology = modelHyperparameters["topology"];
@@ -26,7 +49,16 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         end;
     end;
 
-    # Vectores para almacenar métricas de cada fold
+    #= 
+    Vectores para almacenar métricas de cada fold
+    accuracy: precisión general
+    error_rate: tasa de error
+    sensitivity: sensibilidad
+    specificity: especificidad
+    PPV: valor predictivo positivo
+    NPV: valor predictivo negativo
+    F1: puntuación F1
+    =#
     accuracy = Float64[];
     error_rate = Float64[];
     sensitivity = Float64[];
@@ -41,7 +73,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     # Calcular las clases únicas
     classes = unique(targets);
     
-    # Inicializar la matriz de confusión
+    # Inicializar la matriz de confusión a zeros
     confusion_matrix = zeros(Int64, length(classes), length(classes));
     
     # Para cada fold en la validación cruzada
@@ -101,7 +133,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
                     coef0 = Float64(coef0),
                     degree = Int32(degree)
                 )
-            end
+            end;
             
             # Crear machine, entrenar y predecir
             mach = machine(model, MLJ.table(X_train), categorical(y_train));
@@ -127,12 +159,12 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
             MLJ.fit!(mach, verbosity=0);
             pred = MLJ.predict(mach, MLJ.table(X_test));
             predictions = mode.(pred);
-        end
+        end;
         
         # Calcular métricas y matriz de confusión para este fold
         fold_metrics = confusionMatrix(predictions, y_test, classes);
         
-        # Almacenar métricas
+        # Almacenar métricas de cada fold
         push!(accuracy, fold_metrics[1]);
         push!(error_rate, fold_metrics[2]);
         push!(sensitivity, fold_metrics[3]);
@@ -143,7 +175,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         
         # Actualizar matriz de confusión global
         confusion_matrix += fold_metrics[8];
-    end
+    end;
     
     # Calcular estadísticas para cada métrica
     accuracy_stats = (mean(accuracy), std(accuracy));
@@ -154,7 +186,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     npv_stats = (mean(npv), std(npv));
     f1_stats = (mean(f1), std(f1));
     
-    # Devolver las métricas y la matriz de confusión
+    # Devolver las métricas y la matriz de confusión global
     return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, 
            ppv_stats, npv_stats, f1_stats, confusion_matrix;
-end
+end;
