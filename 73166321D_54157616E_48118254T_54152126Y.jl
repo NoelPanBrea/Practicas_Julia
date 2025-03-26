@@ -688,7 +688,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         if haskey(modelHyperparameters, "topology")
             topology = modelHyperparameters["topology"];
             
-            return ANNCrossValidation(topology, inputs, targets, crossValidationIndices;
+            return ANNCrossValidation(topology, dataset, crossValidationIndices;
                 numExecutions = get(modelHyperparameters, "numExecutions", 50),
                 transferFunctions = get(modelHyperparameters, "transferFunctions", fill(σ, length(topology))),
                 maxEpochs = get(modelHyperparameters, "maxEpochs", 1000),
