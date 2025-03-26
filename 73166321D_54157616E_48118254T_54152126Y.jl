@@ -644,10 +644,10 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20)
     classes = unique(dataset[2]);
     num_classes = length(classes)
-    targets = unique(dataset[2], classes);
+    targets = oneHotEncoding(dataset[2], classes);
     inputs = dataset[1];
-    folds = maximum(crossvalidation(targets, folds));
-    v = crossvalidation(targets, folds)
+    folds = maximum(crossValidationIndices);
+    v = crossValidationIndices;
     precision = 0;
     tasa_de_error = 0;
     sensibilidad = 0;
@@ -655,12 +655,28 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     valor_predictivo_positivo = 0;
     valor_predictivo_negativo = 0;
     F1 = 0;
-    mat = Matrix(0);
+    mat = zeros(0, num_classes, num_classes, numExecutions);
+    cnt = 0;
+    println(typeof(inputs), typeof(targets))
     while cnt < folds
         cnt += 1;
-        array = AbstractArray{Int64}(num_classes, num_classes, numExecutions)
-        fold_dataset = (input[findall(x -> (x == k), dataset[1])], targets[findall(x -> (x == k), dataset[1])])
-
+        fold_inputs = inputs[findall(x -> (x == cnt), crossValidationIndices)];
+        fold_targets = targets[findall(x -> (x == cnt), crossValidationIndices)];
+        train, test = holdOut(size(fold_inputs, 1), 0.2);
+        fold_train_inputs = fold_inputs[train]
+        fold_train_targets = fold_targets[train]
+        fold_test_inputs = fold_inputs[test]
+        fold_test_targets = fold_targets[test]
+        array = zeros(Int64, num_classes, num_classes, numExecutions)
+        print(typeof(fold_train_inputs), typeof(fold_train_targets))
+        cnt2 = 0
+        while cnt2 < numExecutions
+            cnt2 += 1;
+            ann = trainClassANN(topology, (fold_train_inputs, fold_train_targets),
+            transferFunctions = transferFunctions, maxEpochs = maxEpochs,
+            minLoss = minLoss, learningRate = learningRate, maxEpochsVal = maxEpochsVal);
+            confusionMatrix(ann(fold_test_inputs')', fold_test_targets);
+        end;
     end;
 
 end;
