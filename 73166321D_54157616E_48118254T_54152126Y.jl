@@ -647,38 +647,74 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     targets = oneHotEncoding(dataset[2], classes);
     inputs = dataset[1];
     folds = maximum(crossValidationIndices);
-    v = crossValidationIndices;
-    precision = 0;
-    tasa_de_error = 0;
-    sensibilidad = 0;
-    especificidad = 0;
-    valor_predictivo_positivo = 0;
-    valor_predictivo_negativo = 0;
-    F1 = 0;
-    mat = zeros(0, num_classes, num_classes, numExecutions);
+    vector_precision = [];
+    vector_tasa_de_error = [];
+    vector_sensibilidad = [];
+    vector_especificidad = [];
+    vector_valor_predictivo_positivo = [];
+    vector_valor_predictivo_negativo = [];
+    vector_f1 = [];
+    mat = zeros(Float32, num_classes, num_classes);
     cnt = 0;
-    println(typeof(inputs), typeof(targets))
     while cnt < folds
         cnt += 1;
-        fold_inputs = inputs[findall(x -> (x == cnt), crossValidationIndices)];
-        fold_targets = targets[findall(x -> (x == cnt), crossValidationIndices)];
-        train, test = holdOut(size(fold_inputs, 1), 0.2);
-        fold_train_inputs = fold_inputs[train]
-        fold_train_targets = fold_targets[train]
-        fold_test_inputs = fold_inputs[test]
-        fold_test_targets = fold_targets[test]
-        array = zeros(Int64, num_classes, num_classes, numExecutions)
-        print(typeof(fold_train_inputs), typeof(fold_train_targets))
-        cnt2 = 0
+        testRatio = 1 / folds;
+        fold_train_inputs = inputs[findall(x -> (x != cnt), crossValidationIndices), :];
+        fold_train_targets = targets[findall(x -> (x != cnt), crossValidationIndices), :];
+        fold_test_inputs = inputs[findall(x -> (x == cnt), crossValidationIndices), :];
+        fold_test_targets = targets[findall(x -> (x == cnt), crossValidationIndices), :];
+        validationDataset = (Array{eltype(fold_train_inputs), 2}(undef, 0, size(fold_train_inputs, 2)),
+        falses(0, size(fold_train_targets, 2)));
+        if validationRatio > 0
+            train, val = holdOut(size(fold_train_inputs, 1), validationRatio / (1 - testRatio));
+            fold_val_inputs = fold_train_inputs[val, :];
+            fold_val_targets = fold_train_targets[val, :];
+            fold_train_inputs = fold_train_inputs[train, :];
+            fold_train_targets = fold_train_targets[train, :];
+            validationDataset = (fold_val_inputs, fold_val_targets);
+        end;
+        fold_precision = [];
+        fold_tasa_de_error = [];
+        fold_sensibilidad = [];
+        fold_especificidad = [];
+        fold_valor_predictivo_positivo = [];
+        fold_valor_predictivo_negativo = [];
+        fold_f1 = [];
+        fold_mat = [];
+        cnt2 = 0;
         while cnt2 < numExecutions
             cnt2 += 1;
-            ann = trainClassANN(topology, (fold_train_inputs, fold_train_targets),
+            ann, train_losses, val_losses, test_losses  = trainClassANN(topology, (fold_train_inputs, fold_train_targets),
+            validationDataset = validationDataset, 
+            testDataset = (fold_test_inputs, fold_test_targets),
             transferFunctions = transferFunctions, maxEpochs = maxEpochs,
             minLoss = minLoss, learningRate = learningRate, maxEpochsVal = maxEpochsVal);
-            confusionMatrix(ann(fold_test_inputs')', fold_test_targets);
+            precision, tasa_error, sensibilidad,
+            especificidad, valor_predictivo_positivo,
+            valor_predictivo_negativo, f1_score, matriz_confusion = confusionMatrix(ann(fold_test_inputs')', fold_test_targets);
+            push!(fold_precision, precision);
+            push!(fold_tasa_de_error, tasa_error);
+            push!(fold_sensibilidad, sensibilidad);
+            push!(fold_especificidad, especificidad);
+            push!(fold_valor_predictivo_positivo, valor_predictivo_positivo);
+            push!(fold_valor_predictivo_negativo, valor_predictivo_negativo);
+            push!(fold_f1, f1_score);
+            push!(fold_mat, matriz_confusion);
         end;
+        push!(vector_precision, mean(fold_precision));
+        push!(vector_tasa_de_error, mean(fold_tasa_de_error));
+        push!(vector_sensibilidad, mean(fold_sensibilidad));
+        push!(vector_especificidad, mean(fold_especificidad));
+        push!(vector_valor_predictivo_positivo, mean(fold_valor_predictivo_positivo));
+        push!(vector_valor_predictivo_negativo, mean(fold_valor_predictivo_negativo));
+        push!(vector_f1, mean(fold_f1));
+        mat = mat + mean(fold_mat);
     end;
-
+    return ((mean(vector_precision), std(vector_precision)), (mean(vector_tasa_de_error), std(vector_tasa_de_error)),
+    (mean(vector_sensibilidad), std(vector_sensibilidad)), (mean(vector_especificidad), std(vector_especificidad)),
+    (mean(vector_valor_predictivo_positivo), std(vector_valor_predictivo_positivo)),
+    (mean(vector_valor_predictivo_negativo), std(vector_valor_predictivo_negativo)),
+    (mean(vector_f1), std(vector_f1)), mat)
 end;
 
 
