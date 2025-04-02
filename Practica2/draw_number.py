@@ -1,7 +1,9 @@
 import pygame
 import time
+from julia import Main
 from _collections_abc import Generator
-
+Main.include("Ej2.jl")
+model = Main.ann
 class Window:
     def __init__(self, size: tuple, gridsize: int, fps: int) -> None:
         pygame.init()
@@ -20,9 +22,10 @@ class Window:
     def launch(self) -> None:
         fmenu = False
         self.cell_init()
-        self.clean_button = pygame.Rect(self.size[0] - 100, 0, 100, self.size[1]/3)
-        self.load_button = pygame.Rect(self.size[0] - 100, self.size[1]/3, 100, self.size[1]/3)
-        self.save_button = pygame.Rect(self.size[0] - 100, 2 * self.size[1]/3, 100, self.size[1]/3)
+        self.clean_button = pygame.Rect(self.size[0] - 100, 0, 100, self.size[1]/4)
+        self.load_button = pygame.Rect(self.size[0] - 100, self.size[1]/4, 100, self.size[1]/4)
+        self.save_button = pygame.Rect(self.size[0] - 100, 2 * self.size[1]/4, 100, self.size[1]/4)
+        self.predict_button = pygame.Rect(self.size[0] - 100, 3 * self.size[1]/4, 100, self.size[1]/4)
         self.brush = pygame.Rect(0, 0, self.thickness, self.thickness)
         cooldown = 5
         while not fmenu:
@@ -43,6 +46,10 @@ class Window:
                 if time.time() - cooldown > 1:
                     self.save()
                     cooldown = time.time()
+            elif pressed[0] and self.save_button.collidepoint(pos):
+                if time.time() - cooldown > 1:
+                    print(self.predict())
+                    cooldown = time.time()
 
             for row in self.cells:
                 for cell in row:
@@ -56,6 +63,7 @@ class Window:
         pygame.draw.rect(self.win, (255, 0, 0), self.clean_button)
         pygame.draw.rect(self.win, (0, 0, 255), self.load_button)
         pygame.draw.rect(self.win, (0, 255, 0), self.save_button)
+        pygame.draw.rect(self.win, (255, 125, 125), self.predict_button)
         for row in self.cells:
             for cell in row:
                 pygame.draw.rect(self.win, cell[1], cell[0])
@@ -110,6 +118,18 @@ class Window:
         for row in self.cells:
             for cell in row:
                 cell[1] = (255, 255, 255)
+
+    def predict(self):
+        array = []
+        for i in range(64):
+            cellx = 4 * (i % 8)
+            celly = 4 * (i // 8)
+            coeff = 0
+            for j in range(4):
+                for k in range(4): 
+                        coeff += 1 if self.cells[celly + j][cellx + k][1] == (0, 0, 0) else 0
+            array.append(coeff)
+        return Main.classifyOutputs(model(array))
                 
 
             
@@ -118,7 +138,7 @@ def main() -> None:
     big = (839, 739)
     small = (519, 419)
     main_window = Window(big, 32, 255)
-    main_window.launch()
+    # main_window.launch()
 
 
 if __name__ == "__main__":
