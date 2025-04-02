@@ -1,4 +1,6 @@
 import pygame
+import time
+from _collections_abc import Generator
 
 class Window:
     def __init__(self, size: tuple, gridsize: int, fps: int) -> None:
@@ -11,8 +13,9 @@ class Window:
         self.gridsize = gridsize
         self.borderpx = 3
         self.thickness = 40
-        self.load_path = ""
-        self.save_path = ""
+        self.load_path = "optical+recognition+of+handwritten+digits\small.txt"
+        self.save_path = "optical+recognition+of+handwritten+digits\generated.txt"
+        self.loaded = self.readfile()
 
     def launch(self) -> None:
         fmenu = False
@@ -21,6 +24,7 @@ class Window:
         self.load_button = pygame.Rect(self.size[0] - 100, self.size[1]/3, 100, self.size[1]/3)
         self.save_button = pygame.Rect(self.size[0] - 100, 2 * self.size[1]/3, 100, self.size[1]/3)
         self.brush = pygame.Rect(0, 0, self.thickness, self.thickness)
+        cooldown = 5
         while not fmenu:
             self.clock.tick(self.fps)
             pos = pygame.mouse.get_pos()
@@ -32,9 +36,14 @@ class Window:
             if pressed[0] and self.clean_button.collidepoint(pos):
                 self.clean()
             elif pressed[0] and self.load_button.collidepoint(pos):
-                self.load()
+                if time.time() - cooldown > 1:
+                    self.load()
+                    cooldown = time.time()
             elif pressed[0] and self.save_button.collidepoint(pos):
-                self.save()
+                if time.time() - cooldown > 1:
+                    self.save()
+                    cooldown = time.time()
+
             for row in self.cells:
                 for cell in row:
                     cell[1] = (0, 0, 0) if cell[0].colliderect(self.brush) and pressed[0] else cell[1]
@@ -52,6 +61,11 @@ class Window:
                 pygame.draw.rect(self.win, cell[1], cell[0])
         pygame.display.update()
 
+    def readfile(self) -> Generator:
+        with open(self.load_path, "r") as file:
+            array = file.read().replace("\n", ",").split(",")[:-1]
+        for i in range(len(array)):
+            yield array[i*65:65 * (i + 1)]
 
     def cell_init(self) -> list[list[pygame.Rect]]:
         tablesize = (self.size[0] - 100, self.size[1])
@@ -66,13 +80,32 @@ class Window:
             self.cells.append(row)
 
     def save(self):
-        for row in self.cells:
-            for cell in row:
-                pass
+        with open(self.save_path, "a") as file:
+            for i in range(64):
+                cellx = 4 * (i % 8)
+                celly = 4 * (i // 8)
+                coeff = 0
+                for j in range(4):
+                    for k in range(4): 
+                            coeff += 1 if self.cells[cellx + j][celly + k][1] == (0, 0, 0) else 0
+                file.write(str(coeff) + ",")
+            file.write("0,")
+                
 
     def load(self):
-        pass
-    
+        try:
+            number = next(self.loaded)
+            print(number[-1])
+            for i, x in enumerate(number[:-1]):
+                cellx = 4 * (i % 8)
+                celly = 4 * (i // 8)
+                if int(x) > 0:
+                    for j in range(4):
+                        for k in range(4): 
+                            self.cells[cellx + j][celly + k][1] = (0, 0, 0)
+        except Exception as e:
+            pass
+
     def clean(self):
         for row in self.cells:
             for cell in row:
