@@ -87,7 +87,7 @@ class Window:
                 coeff = 0
                 for j in range(4):
                     for k in range(4): 
-                            coeff += 1 if self.cells[cellx + j][celly + k][1] == (0, 0, 0) else 0
+                            coeff += 1 if self.cells[celly + j][cellx + k][1] == (0, 0, 0) else 0
                 file.write(str(coeff) + ",")
             file.write("0,")
                 
@@ -102,7 +102,7 @@ class Window:
                 if int(x) > 0:
                     for j in range(4):
                         for k in range(4): 
-                            self.cells[cellx + j][celly + k][1] = (0, 0, 0)
+                            self.cells[celly + j][cellx + k][1] = (0, 0, 0)
         except Exception as e:
             pass
 
