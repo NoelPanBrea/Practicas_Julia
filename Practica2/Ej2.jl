@@ -268,8 +268,13 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tupl
 end;
 
 dataset = readdlm("optical+recognition+of+handwritten+digits/optdigits.tra",',');
+datatest = readdlm("optical+recognition+of+handwritten+digits/optdigits.tes", ',')
 begin
     inputs = dataset[:,1:64];
+    test_inputs = datatest[:,1:64]
+    test_inputs = Float32.(test_inputs);
+    test_targets = datatest[:,65]
+    test_targets = oneHotEncoding(test_targets) 
     # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
     inputs = Float32.(inputs);
     inputs = convert(Array{Float32,2},inputs);
@@ -279,7 +284,7 @@ begin
     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
     targets = oneHotEncoding(targets);
     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-    ann, losses = trainClassANN([5], (inputs, targets));
+    ann, losses = trainClassANN([15], (test_inputs, test_targets); maxEpochs = 1000, learningRate = 0.1);
     println(length(losses));
     println(accuracy(ann(permutedims(inputs))', targets));
 end;

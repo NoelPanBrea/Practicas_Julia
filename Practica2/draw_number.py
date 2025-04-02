@@ -46,9 +46,9 @@ class Window:
                 if time.time() - cooldown > 1:
                     self.save()
                     cooldown = time.time()
-            elif pressed[0] and self.save_button.collidepoint(pos):
+            elif pressed[0] and self.predict_button.collidepoint(pos):
                 if time.time() - cooldown > 1:
-                    print(self.predict())
+                    print("respuesta", self.predict().tolist().index(True))
                     cooldown = time.time()
 
             for row in self.cells:
@@ -63,7 +63,7 @@ class Window:
         pygame.draw.rect(self.win, (255, 0, 0), self.clean_button)
         pygame.draw.rect(self.win, (0, 0, 255), self.load_button)
         pygame.draw.rect(self.win, (0, 255, 0), self.save_button)
-        pygame.draw.rect(self.win, (255, 125, 125), self.predict_button)
+        pygame.draw.rect(self.win, (255, 255, 0), self.predict_button)
         for row in self.cells:
             for cell in row:
                 pygame.draw.rect(self.win, cell[1], cell[0])
@@ -138,7 +138,7 @@ def main() -> None:
     big = (839, 739)
     small = (519, 419)
     main_window = Window(big, 32, 255)
-    # main_window.launch()
+    main_window.launch()
 
 
 if __name__ == "__main__":
