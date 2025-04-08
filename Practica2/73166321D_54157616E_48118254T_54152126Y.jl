@@ -885,8 +885,8 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, ppv_stats, npv_stats, f1_stats, confusion_matrix;
 end;
 
-dataset = readdlm("optical+recognition+of+handwritten+digits/optdigits.tra",',');
-datatest = readdlm("optical+recognition+of+handwritten+digits/optdigits.tes", ',')
+dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tra",',');
+datatest = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tes", ',')
 begin
     inputs = dataset[:,1:64];
     test_inputs = datatest[:,1:64]

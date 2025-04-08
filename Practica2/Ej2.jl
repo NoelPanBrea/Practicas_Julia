@@ -267,8 +267,8 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tupl
     trainClassANN(topology,dataset,transferFunctions = transferFunctions,maxEpochs = maxEpochs,minLoss = minLoss,learningRate = learningRate);
 end;
 
-dataset = readdlm("optical+recognition+of+handwritten+digits/optdigits.tra",',');
-datatest = readdlm("optical+recognition+of+handwritten+digits/optdigits.tes", ',')
+dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tra",',');
+datatest = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tes", ',')
 begin
     inputs = dataset[:,1:64];
     test_inputs = datatest[:,1:64]
@@ -286,7 +286,7 @@ begin
     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
     targets = oneHotEncoding(targets);
     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-    ann, losses = trainClassANN([1500], (inputs, targets); maxEpochs = 500, learningRate = 0.01);
+    ann, losses = trainClassANN([15], (inputs, targets); maxEpochs = 500, learningRate = 0.01);
     println(length(losses));
     println(accuracy(ann(permutedims(inputs))', targets));
     println(accuracy(ann(permutedims(test_inputs))', test_targets));

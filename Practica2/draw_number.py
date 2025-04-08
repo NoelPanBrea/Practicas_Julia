@@ -3,7 +3,7 @@ import time
 from julia import Main
 from _collections_abc import Generator
 #Main.include("73166321D_54157616E_48118254T_54152126Y.jl")
-Main.include("Ej2.jl")
+Main.include("Practica2/Ej2.jl")
 model = Main.ann
 class Window:
     def __init__(self, size: tuple, gridsize: int, fps: int) -> None:
@@ -16,8 +16,8 @@ class Window:
         self.gridsize = gridsize
         self.borderpx = 3
         self.thickness = 40
-        self.load_path = "optical+recognition+of+handwritten+digits\small.txt"
-        self.save_path = "optical+recognition+of+handwritten+digits\generated.txt"
+        self.load_path = "Practica2/optical+recognition+of+handwritten+digits/small.txt"
+        self.save_path = "Practica2/optical+recognition+of+handwritten+digits/generated.txt"
         self.loaded = self.readfile()
 
     def launch(self) -> None:
