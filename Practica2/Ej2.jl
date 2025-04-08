@@ -279,12 +279,16 @@ begin
     inputs = Float32.(inputs);
     inputs = convert(Array{Float32,2},inputs);
     inputs = [Float32(x) for x in inputs];
+    # inputs = normalizeMinMax!(inputs);
+    # test_inputs = normalizeMinMax!(test_inputs);
     println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
     targets = dataset[:,65];
     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
     targets = oneHotEncoding(targets);
     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-    ann, losses = trainClassANN([15], (test_inputs, test_targets); maxEpochs = 1000, learningRate = 0.1);
+    ann, losses = trainClassANN([1500], (inputs, targets); maxEpochs = 500, learningRate = 0.01);
     println(length(losses));
     println(accuracy(ann(permutedims(inputs))', targets));
+    println(accuracy(ann(permutedims(test_inputs))', test_targets));
+    print(classifyOutputs(ann([0,1,6,15,12,1,0,0,0,7,16,6,6,10,0,0,0,8,16,2,0,11,2,0,0,5,16,3,0,5,7,0,0,7,13,3,0,8,7,0,0,4,12,0,1,13,5,0,0,0,14,9,15,9,0,0,0,0,6,14,7,1,0,0])));
 end;
