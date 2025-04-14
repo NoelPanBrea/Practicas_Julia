@@ -286,7 +286,7 @@ begin
     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
     targets = oneHotEncoding(targets);
     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-    ann, losses = trainClassANN([15], (inputs, targets); maxEpochs = 500, learningRate = 0.01);
+    ann, losses = trainClassANN([15, 15], (test_inputs, test_targets); maxEpochs = 500, learningRate = 0.01);
     println(length(losses));
     println(accuracy(ann(permutedims(inputs))', targets));
     println(accuracy(ann(permutedims(test_inputs))', test_targets));

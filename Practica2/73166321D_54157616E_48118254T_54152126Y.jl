@@ -760,7 +760,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     ppv = Float64[];
     npv = Float64[];
     f1 = Float64[];
-
+    mach = 0;
     # Convertir el vector de salidas a strings
     targets = string.(targets);
     
@@ -882,7 +882,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     f1_stats = (mean(f1), std(f1));
     
     # Devolver las métricas y la matriz de confusión
-    return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, ppv_stats, npv_stats, f1_stats, confusion_matrix;
+    return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, ppv_stats, npv_stats, f1_stats, confusion_matrix, mach;
 end;
 
 dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tra",',');
@@ -892,7 +892,7 @@ begin
     test_inputs = datatest[:,1:64]
     test_inputs = Float32.(test_inputs);
     test_targets = datatest[:,65]
-    test_targets = oneHotEncoding(test_targets) 
+    test_targets = test_targets 
     # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
     inputs = Float32.(inputs);
     inputs = convert(Array{Float32,2},inputs);
@@ -901,11 +901,10 @@ begin
     targets = dataset[:,65];
     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
-    #println(ANNCrossValidation([1], (inputs, targets), crossvalidation(size(inputs, 1), 10)));
-    targets = oneHotEncoding(targets)
-    modelCrossValidation = 
-    ann, train_losses, val_losses, test_losses = trainClassANN([0], (inputs, targets); validationDataset = (test_inputs, test_targets), testDataset = (test_inputs, test_targets)
-    , maxEpochs=5000, minLoss = 0.0, learningRate = 0.01, maxEpochsVal = 20)
-    println(train_losses, val_losses, test_losses)
-    println(accuracy(ann(permutedims(test_inputs))', test_targets));
+    ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix, mach) =
+    modelCrossValidation(:KNeighborsClassifier, Dict("n_neighbors" => 3), (test_inputs, test_targets), repeat(1:10, 179));
+    println(testAccuracy_mean)
+    pred = MLJ.predict(mach, MLJ.table(inputs))
+    predictions = mode.(pred)
+    print(accuracy(oneHotEncoding(predictions), oneHotEncoding(targets)))
 end;
