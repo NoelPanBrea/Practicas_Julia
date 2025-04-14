@@ -885,7 +885,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, ppv_stats, npv_stats, f1_stats, confusion_matrix, mach;
 end;
 
-dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tra",',');
+dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.full",',');
 datatest = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tes", ',')
 begin
     inputs = dataset[:,1:64];
@@ -902,9 +902,9 @@ begin
     println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
     println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
     ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix, mach) =
-    modelCrossValidation(:KNeighborsClassifier, Dict("n_neighbors" => 3), (test_inputs, test_targets), repeat(1:10, 179));
+    modelCrossValidation(:KNeighborsClassifier, Dict("n_neighbors" => 3), (inputs, targets), repeat(1:10, 540));
     println(testAccuracy_mean)
-    pred = MLJ.predict(mach, MLJ.table(inputs))
+    pred = MLJ.predict(mach, MLJ.table(test_inputs))
     predictions = mode.(pred)
-    print(accuracy(oneHotEncoding(predictions), oneHotEncoding(targets)))
+    print(accuracy(oneHotEncoding(predictions), oneHotEncoding(test_targets)))
 end;

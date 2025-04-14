@@ -2,9 +2,10 @@ import pygame
 import time
 from julia import Main
 from _collections_abc import Generator
-#Main.include("73166321D_54157616E_48118254T_54152126Y.jl")
+# Main.include("73166321D_54157616E_48118254T_54152126Y.jl")
 Main.include("Practica2/Ej2.jl")
 model = Main.ann
+
 class Window:
     def __init__(self, size: tuple, gridsize: int, fps: int) -> None:
         pygame.init()
@@ -139,7 +140,7 @@ def main() -> None:
     big = (839, 739)
     small = (519, 419)
     main_window = Window(big, 32, 255)
-    #main_window.launch()
+    main_window.launch()
 
 
 if __name__ == "__main__":
