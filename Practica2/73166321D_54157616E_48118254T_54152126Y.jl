@@ -761,7 +761,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     ppv = Float64[];
     npv = Float64[];
     f1 = Float64[];
-    mach = 0;
+    best_model = (0, 0);
     # Convertir el vector de salidas a strings
     targets = string.(targets);
     
@@ -859,7 +859,12 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         
         # Calcular métricas y matriz de confusión para este fold
         fold_metrics = confusionMatrix(predictions, y_test, classes);
-        
+
+        #Comprobar si el modelo es mejor que el anterior
+            if fold_metrics[1] > best_model[2]
+                best_model = (mach, fold_metrics[1]);
+            end
+
         # Almacenar métricas
         push!(accuracy, fold_metrics[1]);
         push!(error_rate, fold_metrics[2]);
@@ -871,6 +876,8 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         
         # Actualizar matriz de confusión global
         confusion_matrix += fold_metrics[8];
+
+
     end;
     
     # Calcular estadísticas para cada métrica
@@ -883,14 +890,33 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     f1_stats = (mean(f1), std(f1));
     
     # Devolver las métricas y la matriz de confusión
-    return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, ppv_stats, npv_stats, f1_stats, confusion_matrix, mach;
+    return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, ppv_stats, npv_stats, f1_stats, confusion_matrix, best_model;
 end;
 
 dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.full",',');
 begin
     #Basic Hyperparameters
+    # ----DoME---- ROTO línea 450: ArgumentError: indexed assignment with a single value to possibly many locations is not supported; perhaps use broadcasting `.=` instead?
+    # hyperparameters = Dict("maximumNodes" => 20);
+    # modelType = :DoME;
+    # ----SVC---- ROTO
+    # hyperparameters = Dict("C" => 1, "kernel" => "rbf", "gamma"  => 3);
+    # modelType = :SVC;
+    # ----DTC----Max = 0.695 depth = 9 cross nonorm
+    hyperparameters = Dict("max_depth" => 9);
+    modelType = :DecisionTreeClassifier;
+    # ----KNN----Max = 0.968 K = 1 cross nonorm
     hyperparameters = Dict("n_neighbors" => 1);
     modelType = :KNeighborsClassifier;
+    # ----ANN----
+    # hyperparameters = Dict(
+    #     "topology"        => [4, 3],
+    #     "learningRate"    => 0.01,
+    #     "validationRatio" => 0.2,
+    #     "numExecutions"   => 50,
+    #     "maxEpochs"       => 100,
+    #     "maxEpochsVal"     => 20);
+    # modelType = :ANN;
 
     #Dataset handling
  
@@ -900,17 +926,29 @@ begin
 
     #Data normalization
 
-    # inputs = normalizeMinMax(inputs)
+    #inputs = normalizeMinMax(inputs)
 
     #training/measuring
+    crossValidationIndices = crossvalidation(oneHotEncoding(targets), 10)
+    # crossValidationIndices = repeat(1:10, 562)
 
-    ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix, mach) =
-    modelCrossValidation(modelType, hyperparameters, (inputs, targets), repeat(1:10, 562));
+    ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix, best_model) =
+    modelCrossValidation(modelType, hyperparameters, (inputs, targets), crossValidationIndices);
 
+    #print data
+    println(modelType, " ", hyperparameters)
+    println("Media tasa de Acierto: ", testAccuracy_mean, " std: ", testAccuracy_std)
+    println("Media tasa de Error: ", testErrorRate_mean, " std: ", testErrorRate_std)
+    println("Media tasa de Sensibilidad: ", testRecall_mean, " std: ", testRecall_std)
+    println("Media tasa de Especificidad: ", testSpecificity_std, " std: ", testSpecificity_std)
+    println("Media tasa de precision: ", testPrecision_mean, " std: ", testPrecision_std)
+    println("Media tasa de NPV: ", testNPV_mean, " std: ", testNPV_std)
+    println("Media tasa de F1: ", testF1_mean, " std: ", testF1_std)
+    println("Matriz de confusion: ", testConfusionMatrix)
+    println("Mejor modelo: ", best_model[2])
     #Final prediction data
-
-    println(testAccuracy_mean);
-    pred = MLJ.predict(mach, MLJ.table(inputs));
+    model = best_model[1]
+    pred = MLJ.predict(model, MLJ.table(inputs));
     predictions = mode.(pred);
     # print(accuracy(oneHotEncoding(predictions), oneHotEncoding(targets)))
 

@@ -1,9 +1,10 @@
 import pygame
 import time
+import random
 from julia import Main, MLJ
 from _collections_abc import Generator
 Main.include("Practica2/73166321D_54157616E_48118254T_54152126Y.jl")
-model = Main.mach
+model = Main.model
 
 class Window:
     def __init__(self, size: tuple, gridsize: int, fps: int) -> None:
