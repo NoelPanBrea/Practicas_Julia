@@ -1,10 +1,9 @@
 import pygame
 import time
-from julia import Main
+from julia import Main, MLJ
 from _collections_abc import Generator
-# Main.include("73166321D_54157616E_48118254T_54152126Y.jl")
-Main.include("Practica2/Ej2.jl")
-model = Main.ann
+Main.include("Practica2/73166321D_54157616E_48118254T_54152126Y.jl")
+model = Main.mach
 
 class Window:
     def __init__(self, size: tuple, gridsize: int, fps: int) -> None:
@@ -50,7 +49,7 @@ class Window:
                     cooldown = time.time()
             elif pressed[0] and self.predict_button.collidepoint(pos):
                 if time.time() - cooldown > 1:
-                    print("respuesta", self.predict().tolist().index(True))
+                    print("respuesta", str(self.predict())[-2])
                     cooldown = time.time()
 
             for row in self.cells:
@@ -131,10 +130,8 @@ class Window:
                 for k in range(4): 
                         coeff += 1 if self.cells[celly + j][cellx + k][1] == (0, 0, 0) else 0
             array.append(coeff)
-        return Main.classifyOutputs(model(array))
-                
+        return Main.mode(MLJ.predict(model, [array])[0])
 
-            
 
 def main() -> None:
     big = (839, 739)

@@ -11,6 +11,7 @@ using Flux
 using Flux.Losses
 using Random
 using DelimitedFiles
+using MLJ
 
 
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
@@ -886,25 +887,31 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
 end;
 
 dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.full",',');
-datatest = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.tes", ',')
 begin
+    #Basic Hyperparameters
+    hyperparameters = Dict("n_neighbors" => 1);
+    modelType = :KNeighborsClassifier;
+
+    #Dataset handling
+ 
     inputs = dataset[:,1:64];
-    test_inputs = datatest[:,1:64]
-    test_inputs = Float32.(test_inputs);
-    test_targets = datatest[:,65]
-    test_targets = test_targets 
-    # Con cualquiera de estas 3 maneras podemos convertir la matriz de entradas de tipo Array{Any,2} en Array{Float32,2}, si los valores son numéricos:
     inputs = Float32.(inputs);
-    inputs = convert(Array{Float32,2},inputs);
-    inputs = [Float32(x) for x in inputs];
-    println("Tamaño de la matriz de entradas: ", size(inputs,1), "x", size(inputs,2), " de tipo ", typeof(inputs));
-    targets = dataset[:,65];
-    println("Longitud del vector de salidas deseadas antes de codificar: ", length(targets), " de tipo ", typeof(targets));
-    println("Tamaño de la matriz de salidas deseadas despues de codificar: ", size(targets,1), "x", size(targets,2), " de tipo ", typeof(targets));
+    targets = dataset[:,65]
+
+    #Data normalization
+
+    # inputs = normalizeMinMax(inputs)
+
+    #training/measuring
+
     ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix, mach) =
-    modelCrossValidation(:KNeighborsClassifier, Dict("n_neighbors" => 3), (inputs, targets), repeat(1:10, 540));
-    println(testAccuracy_mean)
-    pred = MLJ.predict(mach, MLJ.table(test_inputs))
-    predictions = mode.(pred)
-    print(accuracy(oneHotEncoding(predictions), oneHotEncoding(test_targets)))
+    modelCrossValidation(modelType, hyperparameters, (inputs, targets), repeat(1:10, 562));
+
+    #Final prediction data
+
+    println(testAccuracy_mean);
+    pred = MLJ.predict(mach, MLJ.table(inputs));
+    predictions = mode.(pred);
+    # print(accuracy(oneHotEncoding(predictions), oneHotEncoding(targets)))
+
 end;
