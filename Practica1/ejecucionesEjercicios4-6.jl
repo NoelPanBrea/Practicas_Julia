@@ -117,7 +117,7 @@ seed!(1); ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testError
 @assert(isapprox(testF1_mean,          0.9528619528619527 ) && isapprox(testF1_std,          0.032528342864622826))
 @assert(all(isapprox(testConfusionMatrix, [49 1 0; 0 48 2; 0 4 46])))
 
-
+#Fallan aquí los asserts
 ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix) =
     modelCrossValidation(:SVC,
         Dict(
@@ -158,7 +158,7 @@ seed!(1); ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testError
 @assert(isapprox(testF1_mean,          0.9663299663299663) && isapprox(testF1_std,          0.035491331763954956))
 @assert(all(isapprox(testConfusionMatrix, [50 0 0; 0 47 3; 0 2 48])))
 
-
+#Fallan los asserts
 seed!(1); ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix) =
     modelCrossValidation(:ANN,
         Dict(
