@@ -38,7 +38,7 @@ function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true,
     
     # Calcular diferencia crítica según el test de Nemenyi
     # q_alpha = quantile(StudentizedRange(n_methods), 1 - α)
-    q_alpha = q_alpha_values[n_methods + 1]
+    q_alpha = q_alpha_values[n_methods]
     cd = q_alpha * sqrt(n_methods * (n_methods + 1) / (6 * n_datasets))
     # Ordenar métodos por rango medio
     sorted_indices = sortperm(avg_ranks)
