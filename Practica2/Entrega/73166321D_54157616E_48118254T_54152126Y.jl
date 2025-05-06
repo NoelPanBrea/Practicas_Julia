@@ -749,7 +749,6 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     # Si el modelo es una Red Neuronal Artificial, llamar a la función correspondiente
     if (modelType == :ANN)
         if haskey(modelHyperparameters, "topology")
-            topology = modelHyperparameters["topology"];
             
             return ANNCrossValidation(modelHyperparameters["topology"], 
                 dataset, crossValidationIndices;
@@ -792,7 +791,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         
         if modelType == :DoME
             # Para DoME, usamos la función trainClassDoME
-            predictions = trainClassDoME((X_train, y_train), X_test, modelHyperparameters["maximumNodes"]);
+            testOutputs = trainClassDoME((X_train, y_train), X_test, modelHyperparameters["maximumNodes"]);
         
         else
             if modelType == :SVC
@@ -819,13 +818,13 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
             end;
 
             # Creamos el objeto de tipo Machine
-            mach = machine(model, MLJ.table(trainingInputs), categorical(trainingTargets));
+            mach = machine(model, MLJ.table(X_train), categorical(y_train));
 
             # Entrenamos el modelo con el conjunto de entrenamiento
             MLJ.fit!(mach, verbosity=0)
 
             # Pasamos el conjunto de test
-            testOutputs = MLJ.predict(mach, MLJ.table(testInputs))
+            testOutputs = MLJ.predict(mach, MLJ.table(X_test))
             # if modelType==:DecisionTreeClassifier || modelType==:KNeighborsClassifier
             if modelType!=:SVC
                 testOutputs = mode.(testOutputs)
@@ -835,15 +834,15 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         end;
 
         # Calculamos las metricas y las almacenamos en las posiciones de este fold de cada vector
-        (testAccuracy[numFold], testErrorRate[numFold], testRecall[numFold], testSpecificity[numFold], testPrecision[numFold], testNPV[numFold], testF1[numFold], testConfusionMatrixThisFold) =
-            confusionMatrix(testOutputs, testTargets, classes);
+        (accuracy[numFold], error_rate[numFold], sensitivity[numFold], specificity[numFold], ppv[numFold], npv[numFold], f1[numFold], this_fold_confusion_matrix) =
+            confusionMatrix(testOutputs, y_test, classes);
 
-        @assert( isapprox( testAccuracy[numFold], sum([testConfusionMatrixThisFold[numClass,numClass] for numClass in 1:length(classes)])/sum(testConfusionMatrixThisFold) ) );
+        @assert( isapprox( accuracy[numFold], sum([this_fold_confusion_matrix[numClass,numClass] for numClass in 1:length(classes)])/sum(this_fold_confusion_matrix) ) );
 
-        testConfusionMatrix .+= testConfusionMatrixThisFold;
+        confusion_matrix .+= this_fold_confusion_matrix;
 
     end; # for numFold in 1:numFolds
 
-    return (mean(testAccuracy), std(testAccuracy)), (mean(testErrorRate), std(testErrorRate)), (mean(testRecall), std(testRecall)), (mean(testSpecificity), std(testSpecificity)), (mean(testPrecision), std(testPrecision)), (mean(testNPV), std(testNPV)), (mean(testF1), std(testF1)), testConfusionMatrix;
+    return (mean(accuracy), std(accuracy)), (mean(error_rate), std(error_rate)), (mean(sensitivity), std(sensitivity)), (mean(specificity), std(specificity)), (mean(ppv), std(ppv)), (mean(npv), std(npv)), (mean(f1), std(f1)), confusion_matrix;
 
 end;
