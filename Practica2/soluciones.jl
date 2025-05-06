@@ -561,6 +561,7 @@ function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, Abstract
 
     testOutputs = Array{Float64,2}(undef, size(testInputs,1), numColumns);
     for numClass in Base.OneTo(numColumns)
+        
 
         testOutputs[:,numClass] .= trainClassDoME((trainingInputs, trainingTargets[:,numClass]), testInputs, maximumNodes)
 

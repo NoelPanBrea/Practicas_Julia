@@ -4,7 +4,7 @@ using Random
 using Plots
 
 # Importar todas las funciones del primer fichero
-include("73166321D_54157616E_48118254T_54152126Y.jl")
+include("soluciones.jl")
 
 # Función para probar diferentes valores de nodos en DoME
 function testDifferentNodes(inputs, targets, nodeValues)

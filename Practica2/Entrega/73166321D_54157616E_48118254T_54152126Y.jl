@@ -428,26 +428,32 @@ function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, Abstract
 
     _, _, _, model = dome(trainingInputs, trainingTargets; maximumNodes = maximumNodes);
 
-    return evaluateTree(model, testInputs);
+    testOutputs = evaluateTree(model, testInputs);
+    #Se añade el caso de que puede ser un valor Real o un vector
+    if isa(testOutputs, Real)
+        testOutputs = repeat([testOutputs], size(testInputs, 1));
+    end;
+    return testOutputs;
 end;
 
 function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}, testInputs::AbstractArray{<:Real,2}, maximumNodes::Int)
     trainingInputs = convert(AbstractArray{Float64,2}, trainingDataset[1]);
     trainingTargets = convert(AbstractArray{Bool,2}, trainingDataset[2]);
-    testInputs = convert(AbstractArray{Float64,2}, testInputs);
+    num_classes = size(trainingDataset,2);
 
-    if size(trainingTargets,2) == 1
+    if num_classes == 1
         result = trainClassDoME((trainingInputs, vec(trainingTargets)), testInputs, maximumNodes);
         return reshape(result, :, 1);
     end;
 
-    num_classes = size(trainingTargets, 2);
-    result = zeros(Float64, size(testInputs,1), num_classes);
+    @assert(num_classes>2);
 
-    for i in 1:num_classes
-        class_results = trainClassDoME((trainingInputs, trainingTargets[:,i]), testInputs, maximumNodes);
+    result = Array{Float64,2}(undef, size(testInputs,1), num_classes);
 
-        result[:,i] = class_results;
+    for i in Base.OneTo(num_classes)
+
+        result[:,i] .= trainClassDoME((trainingInputs, trainingTargets[:,i]), testInputs, maximumNodes);
+
     end;
 
     return result
@@ -455,27 +461,28 @@ end;
 
 
 function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{<:Any,1}}, testInputs::AbstractArray{<:Real,2}, maximumNodes::Int)
-    trainingInputs = convert(AbstractArray{Float64,2}, trainingDataset[1]);
-    trainingTargets = trainingDataset[2];
-    testInputs = convert(AbstractArray{Float64,2}, testInputs);
-
+    (trainingInputs, trainingTargets) = trainingDataset;
     classes = unique(trainingTargets);
 
     testOutputs = Array{eltype(trainingTargets),1}(undef, size(testInputs, 1));
+
     testOutputsDoME = trainClassDoME((trainingInputs, oneHotEncoding(trainingTargets, classes)), testInputs, maximumNodes);
     testOutputsBool = classifyOutputs(testOutputsDoME; threshold=0);
 
     num_classes = length(classes);
     
     if num_classes <= 2
+        @assert(isa(testOutputsBool, Vector) || size(testOutputsBool,2)==1)
         testOutputsBool = vec(testOutputsBool);
         testOutputs[testOutputsBool] .= classes[1];
 
         if num_classes == 2
             testOutputs[.!testOutputsBool] .= classes[2];
+        else @assert(all(testOutputsBool))
         end;
-    else
-        for i in 1:num_classes
+    else 
+        @assert(all(sum(testOutputsBool, dims=2).==1));
+        for i in eachindex(classes)
             testOutputs[testOutputsBool[:,i]] .= classes[i];
         end;
     end;
@@ -735,33 +742,37 @@ DTClassifier  = MLJ.@load DecisionTreeClassifier pkg=DecisionTree verbosity=0
 
 function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{<:Any,1}}, crossValidationIndices::Array{Int64,1})
     # Extraer datos del dataset
-    inputs, targets = dataset;
+    (inputs, targets) = dataset;
+
+    @assert(size(inputs,1) == length(targets));
     
     # Si el modelo es una Red Neuronal Artificial, llamar a la función correspondiente
-    if modelType == :ANN
+    if (modelType == :ANN)
         if haskey(modelHyperparameters, "topology")
             topology = modelHyperparameters["topology"];
             
-            return ANNCrossValidation(topology, dataset, crossValidationIndices;
-                numExecutions = get(modelHyperparameters, "numExecutions", 50),
-                transferFunctions = get(modelHyperparameters, "transferFunctions", fill(σ, length(topology))),
-                maxEpochs = get(modelHyperparameters, "maxEpochs", 1000),
-                minLoss = get(modelHyperparameters, "minLoss", 0.0),
-                learningRate = get(modelHyperparameters, "learningRate", 0.01),
-                validationRatio = get(modelHyperparameters, "validationRatio", 0),
-                maxEpochsVal = get(modelHyperparameters, "maxEpochsVal", 20));
+            return ANNCrossValidation(modelHyperparameters["topology"], 
+                dataset, crossValidationIndices;
+                numExecutions = haskey(modelHyperparameters, "numExecutions") ? modelHyperparameters["numExecutions"] : 50,
+                transferFunctions = haskey(modelHyperparameters, "transferFunctions") ? modelHyperparameters["transferFunction"] :  fill(σ, length(modelHyperparameters["topology"])),
+                maxEpochs = haskey(modelHyperparameters,"maxEpochs") ? modelHyperparameters["maxEpochs"] : 1000,
+                minLoss = haskey(modelHyperparameters,"minLoss") ? modelHyperparameters["minLoss"] : 0.0,
+                learningRate = haskey(modelHyperparameters, "learningRate") ? modelHyperparameters["learningRate"] : 0.01,
+                validationRatio = haskey(modelHyperparameters,"learningRate") ? modelHyperparameters["validationRatio"] : 0,
+                maxEpochsVal = haskey(modelHyperparameters, "maxEpochsVal") ? modelHyperparameters["maxEpochsVal"] : 20);
         end;
     end;
 
     # Vectores para almacenar métricas de cada fold
-    accuracy = Float64[];
-    error_rate = Float64[];
-    sensitivity = Float64[];
-    specificity = Float64[];
-    ppv = Float64[];
-    npv = Float64[];
-    f1 = Float64[];
-    best_model = (0, 0);
+    numFolds = maximum(crossValidationIndices);
+    accuracy = Array{Float64,1}(undef, numFolds);
+    error_rate = Array{Float64,1}(undef, numFolds);
+    sensitivity = Array{Float64,1}(undef, numFolds);
+    specificity = Array{Float64,1}(undef, numFolds);
+    ppv = Array{Float64,1}(undef, numFolds);
+    npv = Array{Float64,1}(undef, numFolds);
+    f1 = Array{Float64,1}(undef, numFolds);
+
     # Convertir el vector de salidas a strings
     targets = string.(targets);
     
@@ -772,184 +783,67 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     confusion_matrix = zeros(Int64, length(classes), length(classes));
     
     # Para cada fold en la validación cruzada
-    for fold in unique(crossValidationIndices)
-        # Índices para entrenamiento y test
-        trainIndices = findall(x -> x != fold, crossValidationIndices);
-        testIndices = findall(x -> x == fold, crossValidationIndices);
-        
+    for numFold in 1:numFolds        
         # Extraer datos de entrenamiento y test
-        X_train = inputs[trainIndices, :];
-        y_train = targets[trainIndices];
-        X_test = inputs[testIndices, :];
-        y_test = targets[testIndices];
-        
-        # Variable para almacenar predicciones
-        predictions = nothing;
+        X_train = inputs[crossValidationIndices.!=numFold, :];
+        y_train = targets[crossValidationIndices.!=numFold,:];
+        X_test = inputs[crossValidationIndices.==numFold,:];
+        y_test = targets[crossValidationIndices.==numFold];
         
         if modelType == :DoME
             # Para DoME, usamos la función trainClassDoME
-            maximumNodes = modelHyperparameters["maximumNodes"];
-            predictions = trainClassDoME((X_train, y_train), X_test, maximumNodes);
-        #ERROR EN MODELO SVC
-        elseif modelType == :SVC
-            
-            # Para SVM, configuramos según el tipo de kernel
-            kernel_type = modelHyperparameters["kernel"];
-            C = modelHyperparameters["C"];
-            
-            if kernel_type == "linear"
+            predictions = trainClassDoME((X_train, y_train), X_test, modelHyperparameters["maximumNodes"]);
+        
+        else
+            if modelType == :SVC
+                @assert((modelHyperparameters["kernel"] == "linear") || (modelHyperparameters["kernel"] == "poly") || (modelHyperparameters["kernel"] == "rbf") || (modelHyperparameters["kernel"] == "sigmoid"));
+
                 model = SVMClassifier(
-                    kernel = LIBSVM.Kernel.Linear,
-                    cost = Float64(C)
-                )
-            elseif kernel_type == "rbf"
-                gamma = modelHyperparameters["gamma"];
-                model = SVMClassifier(
-                    kernel = LIBSVM.Kernel.RadialBasis,
-                    cost = Float64(C),
-                    gamma = Float64(gamma)
-                )
-            elseif kernel_type == "sigmoid"
-                gamma = modelHyperparameters["gamma"];
-                coef0 = modelHyperparameters["coef0"];
-                model = SVMClassifier(
-                    kernel = LIBSVM.Kernel.Sigmoid,
-                    cost = Float64(C),
-                    gamma = Float64(gamma),
-                    coef0 = Float64(coef0)
-                )
-            elseif kernel_type == "poly"
-                gamma = modelHyperparameters["gamma"];
-                coef0 = modelHyperparameters["coef0"];
-                degree = modelHyperparameters["degree"];
-                model = SVMClassifier(
-                    kernel = LIBSVM.Kernel.Polynomial,
-                    cost = Float64(C),
-                    gamma = Float64(gamma),
-                    coef0 = Float64(coef0),
-                    degree = Int32(degree)
-                )
+                    kernel = 
+                        modelHyperparameters["kernel"]=="linear"  ? LIBSVM.Kernel.Linear :
+                        modelHyperparameters["kernel"]=="rbf"     ? LIBSVM.Kernel.RadialBasis :
+                        modelHyperparameters["kernel"]=="poly"    ? LIBSVM.Kernel.Polynomial :
+                        modelHyperparameters["kernel"]=="sigmoid" ? LIBSVM.Kernel.Sigmoid : nothing,
+                    cost   = Float64(modelHyperparameters["C"]),
+                    gamma  = Float64(get(modelHyperparameters, "gamma",  -1)),
+                    degree = Int32(  get(modelHyperparameters, "degree", -1)),
+                    coef0  = Float64(get(modelHyperparameters, "coef0",  -1)));
+                # Cuidado con los tipos de los argumentos cost, gamma, degree y coef0, tienen que ser esos. No vale, por ejemplo, que degree sea Int, tiene que ser Int32
+
+            elseif modelType==:DecisionTreeClassifier
+                model = DTClassifier(max_depth = modelHyperparameters["max_depth"], rng=Random.MersenneTwister(1));
+            elseif modelType==:KNeighborsClassifier
+                model = kNNClassifier(K = modelHyperparameters["n_neighbors"]);
+            else
+                error(string("Unknown model ", modelType));
             end;
-        
-            # Crear machine, entrenar y predecir
-            mach = machine(model, MLJ.table(X_train), categorical(y_train));
-            MLJ.fit!(mach, verbosity=0);
-            predictions = MLJ.predict(mach, MLJ.table(X_test));
-            
-        elseif modelType == :DecisionTreeClassifier
-            # Para árboles de decisión
-            max_depth = modelHyperparameters["max_depth"];
-            model = DTClassifier(max_depth = max_depth, rng = Random.MersenneTwister(1));
-            
-            mach = machine(model, MLJ.table(X_train), categorical(y_train));
-            MLJ.fit!(mach, verbosity=0);
-            pred = MLJ.predict(mach, MLJ.table(X_test));
-            predictions = mode.(pred);
-            
-        elseif modelType == :KNeighborsClassifier
-            # Para kNN
-            K = modelHyperparameters["n_neighbors"];
-            model = kNNClassifier(K = K);
-            
-            mach = machine(model, MLJ.table(X_train), categorical(y_train));
-            MLJ.fit!(mach, verbosity=0);
-            pred = MLJ.predict(mach, MLJ.table(X_test));
-            predictions = mode.(pred);
-        end
-        
-        # Calcular métricas y matriz de confusión para este fold
-        fold_metrics = confusionMatrix(predictions, y_test, classes);
 
-        #Comprobar si el modelo es mejor que el anterior
-            if fold_metrics[1] > best_model[2]
-                best_model = (mach, fold_metrics[1]);
-            end
+            # Creamos el objeto de tipo Machine
+            mach = machine(model, MLJ.table(trainingInputs), categorical(trainingTargets));
 
-        # Almacenar métricas
-        push!(accuracy, fold_metrics[1]);
-        push!(error_rate, fold_metrics[2]);
-        push!(sensitivity, fold_metrics[3]);
-        push!(specificity, fold_metrics[4]);
-        push!(ppv, fold_metrics[5]);
-        push!(npv, fold_metrics[6]);
-        push!(f1, fold_metrics[7]);
-        
-        # Actualizar matriz de confusión global
-        confusion_matrix += fold_metrics[8];
+            # Entrenamos el modelo con el conjunto de entrenamiento
+            MLJ.fit!(mach, verbosity=0)
 
+            # Pasamos el conjunto de test
+            testOutputs = MLJ.predict(mach, MLJ.table(testInputs))
+            # if modelType==:DecisionTreeClassifier || modelType==:KNeighborsClassifier
+            if modelType!=:SVC
+                testOutputs = mode.(testOutputs)
+            end;
+            # testOutputs = string.(testOutputs);
 
-    end;
-    
-    # Calcular estadísticas para cada métrica
-    accuracy_stats = (mean(accuracy), std(accuracy));
-    error_rate_stats = (mean(error_rate), std(error_rate));
-    sensitivity_stats = (mean(sensitivity), std(sensitivity));
-    specificity_stats = (mean(specificity), std(specificity));
-    ppv_stats = (mean(ppv), std(ppv));
-    npv_stats = (mean(npv), std(npv));
-    f1_stats = (mean(f1), std(f1));
-    
-    # Devolver las métricas y la matriz de confusión
-    return accuracy_stats, error_rate_stats, sensitivity_stats, specificity_stats, ppv_stats, npv_stats, f1_stats, confusion_matrix, best_model;
-end;
+        end;
 
-dataset = readdlm("Practica2/optical+recognition+of+handwritten+digits/optdigits.full",',');
-begin
-    #Basic Hyperparameters
-    # ----DoME---- ROTO línea 450: ArgumentError: indexed assignment with a single value to possibly many locations is not supported; perhaps use broadcasting `.=` instead?
-    # hyperparameters = Dict("maximumNodes" => 20);
-    # modelType = :DoME;
-    # ----SVC---- ROTO
-    # hyperparameters = Dict("C" => 1, "kernel" => "rbf", "gamma"  => 3);
-    # modelType = :SVC;
-    # ----DTC----Max = 0.695 depth = 9 cross nonorm
-    hyperparameters = Dict("max_depth" => 9);
-    modelType = :DecisionTreeClassifier;
-    # ----KNN----Max = 0.968 K = 1 cross nonorm
-    hyperparameters = Dict("n_neighbors" => 1);
-    modelType = :KNeighborsClassifier;
-    # ----ANN----
-    # hyperparameters = Dict(
-    #     "topology"        => [4, 3],
-    #     "learningRate"    => 0.01,
-    #     "validationRatio" => 0.2,
-    #     "numExecutions"   => 50,
-    #     "maxEpochs"       => 100,
-    #     "maxEpochsVal"     => 20);
-    # modelType = :ANN;
+        # Calculamos las metricas y las almacenamos en las posiciones de este fold de cada vector
+        (testAccuracy[numFold], testErrorRate[numFold], testRecall[numFold], testSpecificity[numFold], testPrecision[numFold], testNPV[numFold], testF1[numFold], testConfusionMatrixThisFold) =
+            confusionMatrix(testOutputs, testTargets, classes);
 
-    #Dataset handling
- 
-    inputs = dataset[:,1:64];
-    inputs = Float32.(inputs);
-    targets = dataset[:,65]
+        @assert( isapprox( testAccuracy[numFold], sum([testConfusionMatrixThisFold[numClass,numClass] for numClass in 1:length(classes)])/sum(testConfusionMatrixThisFold) ) );
 
-    #Data normalization
+        testConfusionMatrix .+= testConfusionMatrixThisFold;
 
-    #inputs = normalizeMinMax(inputs)
+    end; # for numFold in 1:numFolds
 
-    #training/measuring
-    crossValidationIndices = crossvalidation(oneHotEncoding(targets), 10)
-    # crossValidationIndices = repeat(1:10, 562)
-
-    ((testAccuracy_mean, testAccuracy_std), (testErrorRate_mean, testErrorRate_std), (testRecall_mean, testRecall_std), (testSpecificity_mean, testSpecificity_std), (testPrecision_mean, testPrecision_std), (testNPV_mean, testNPV_std), (testF1_mean, testF1_std), testConfusionMatrix, best_model) =
-    modelCrossValidation(modelType, hyperparameters, (inputs, targets), crossValidationIndices);
-
-    #print data
-    println(modelType, " ", hyperparameters)
-    println("Media tasa de Acierto: ", testAccuracy_mean, " std: ", testAccuracy_std)
-    println("Media tasa de Error: ", testErrorRate_mean, " std: ", testErrorRate_std)
-    println("Media tasa de Sensibilidad: ", testRecall_mean, " std: ", testRecall_std)
-    println("Media tasa de Especificidad: ", testSpecificity_std, " std: ", testSpecificity_std)
-    println("Media tasa de precision: ", testPrecision_mean, " std: ", testPrecision_std)
-    println("Media tasa de NPV: ", testNPV_mean, " std: ", testNPV_std)
-    println("Media tasa de F1: ", testF1_mean, " std: ", testF1_std)
-    println("Matriz de confusion: ", testConfusionMatrix)
-    println("Mejor modelo: ", best_model[2])
-    #Final prediction data
-    model = best_model[1]
-    pred = MLJ.predict(model, MLJ.table(inputs));
-    predictions = mode.(pred);
-    # print(accuracy(oneHotEncoding(predictions), oneHotEncoding(targets)))
+    return (mean(testAccuracy), std(testAccuracy)), (mean(testErrorRate), std(testErrorRate)), (mean(testRecall), std(testRecall)), (mean(testSpecificity), std(testSpecificity)), (mean(testPrecision), std(testPrecision)), (mean(testNPV), std(testNPV)), (mean(testF1), std(testF1)), testConfusionMatrix;
 
 end;
