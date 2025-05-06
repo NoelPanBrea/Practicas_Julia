@@ -20,7 +20,7 @@ Si valores más altos son mejores (ej. exactitud), establece `lower_is_better=fa
 function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true, title="", figsize=(800, 400))
     n_methods = length(methods)
     n_datasets = size(performances, 1)
-    
+    q_alpha_values = [0, 1.960, 2.343, 2.569, 2.728, 2.850, 2.949, 3.031, 3.102, 3.164]
     # Calcular rangos para cada dataset
     ranks = zeros(n_datasets, n_methods)
     for i in 1:n_datasets
@@ -37,9 +37,9 @@ function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true,
     avg_ranks = vec(mean(ranks, dims=1))
     
     # Calcular diferencia crítica según el test de Nemenyi
-    q_alpha = quantile(StudentizedRange(n_methods), 1 - α)
+    # q_alpha = quantile(StudentizedRange(n_methods), 1 - α)
+    q_alpha = q_alpha_values[n_methods + 1]
     cd = q_alpha * sqrt(n_methods * (n_methods + 1) / (6 * n_datasets))
-    
     # Ordenar métodos por rango medio
     sorted_indices = sortperm(avg_ranks)
     sorted_methods = methods[sorted_indices]

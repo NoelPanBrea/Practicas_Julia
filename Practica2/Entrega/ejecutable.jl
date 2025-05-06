@@ -3,8 +3,8 @@ dataset = readdlm("Practica2/Entrega/optical+recognition+of+handwritten+digits/o
 begin
     #Basic Hyperparameters
     # ----SVC----
-    hyperparameters = Dict("C" => 1, "kernel" => "rbf")
-    modelType = :SVC;
+    # hyperparameters = Dict("C" => 1, "kernel" => "rbf")
+    # modelType = :SVC;
     # ----DTC----Max = 0.695 depth = 9 cross nonorm
     # hyperparameters = Dict("max_depth" => 9);
     # modelType = :DecisionTreeClassifier;
