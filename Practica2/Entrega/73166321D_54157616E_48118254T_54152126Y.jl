@@ -9,9 +9,6 @@
 using Statistics
 using Flux
 using Flux.Losses
-using Random
-using DelimitedFiles
-using MLJ
 
 
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
@@ -717,7 +714,7 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
         push!(vector_valor_predictivo_positivo, mean(fold_valor_predictivo_positivo));
         push!(vector_valor_predictivo_negativo, mean(fold_valor_predictivo_negativo));
         push!(vector_f1, mean(fold_f1));
-        mat = mat + mean(fold_mat);
+        mat = mat + fold_mat;
     end;
     return ((mean(vector_precision), std(vector_precision)), (mean(vector_tasa_de_error), std(vector_tasa_de_error)),
     (mean(vector_sensibilidad), std(vector_sensibilidad)), (mean(vector_especificidad), std(vector_especificidad)),
@@ -785,7 +782,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
     for numFold in 1:numFolds        
         # Extraer datos de entrenamiento y test
         X_train = inputs[crossValidationIndices.!=numFold, :];
-        y_train = targets[crossValidationIndices.!=numFold,:];
+        y_train = targets[crossValidationIndices.!=numFold];
         X_test = inputs[crossValidationIndices.==numFold,:];
         y_test = targets[crossValidationIndices.==numFold];
         
@@ -803,11 +800,10 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
                         modelHyperparameters["kernel"]=="rbf"     ? LIBSVM.Kernel.RadialBasis :
                         modelHyperparameters["kernel"]=="poly"    ? LIBSVM.Kernel.Polynomial :
                         modelHyperparameters["kernel"]=="sigmoid" ? LIBSVM.Kernel.Sigmoid : nothing,
-                    cost   = Float64(modelHyperparameters["C"]),
-                    gamma  = Float64(get(modelHyperparameters, "gamma",  -1)),
-                    degree = Int32(  get(modelHyperparameters, "degree", -1)),
-                    coef0  = Float64(get(modelHyperparameters, "coef0",  -1)));
-                # Cuidado con los tipos de los argumentos cost, gamma, degree y coef0, tienen que ser esos. No vale, por ejemplo, que degree sea Int, tiene que ser Int32
+                    cost = Float64(modelHyperparameters["C"]),
+                    gamma = Float64(get(modelHyperparameters, "gamma",  -1)),
+                    degree = Int32(get(modelHyperparameters, "degree", -1)),
+                    coef0 = Float64(get(modelHyperparameters, "coef0",  -1)));
 
             elseif modelType==:DecisionTreeClassifier
                 model = DTClassifier(max_depth = modelHyperparameters["max_depth"], rng=Random.MersenneTwister(1));

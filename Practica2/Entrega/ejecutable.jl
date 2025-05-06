@@ -3,7 +3,7 @@ dataset = readdlm("Practica2/Entrega/optical+recognition+of+handwritten+digits/o
 begin
     #Basic Hyperparameters
     # ----SVC----
-    hyperparameters = Dict("C" => 1, "kernel" => "rbf", "gamma"  => 3);
+    hyperparameters = Dict("C" => 1, "kernel" => "rbf")
     modelType = :SVC;
     # ----DTC----Max = 0.695 depth = 9 cross nonorm
     # hyperparameters = Dict("max_depth" => 9);
@@ -12,14 +12,14 @@ begin
     # hyperparameters = Dict("n_neighbors" => 1);
     # modelType = :KNeighborsClassifier;
     # ----ANN----
-    hyperparameters = Dict(
-        "topology"        => [4, 3],
-        "learningRate"    => 0.01,
-        "validationRatio" => 0.2,
-        "numExecutions"   => 50,
-        "maxEpochs"       => 100,
-        "maxEpochsVal"     => 20);
-    modelType = :ANN;
+    # hyperparameters = Dict(
+    #     "topology"        => [4, 3],
+    #     "learningRate"    => 0.01,
+    #     "validationRatio" => 0.2,
+    #     "numExecutions"   => 50,
+    #     "maxEpochs"       => 100,
+    #     "maxEpochsVal"     => 20);
+    # modelType = :ANN;
 
     #Dataset handling
  
