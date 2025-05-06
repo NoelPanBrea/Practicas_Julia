@@ -67,7 +67,7 @@ function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true,
     end
     
     # Dibujar CD en la parte superior
-    cd_start = 1.5
+    cd_start = 1.325
     cd_end = cd_start + cd
     plot!(plt, [cd_start, cd_end], [n_methods + 1, n_methods + 1], color=:black, linewidth=2)
     annotate!(plt, [(cd_start + cd/2, n_methods + 1.2, "CD = $(round(cd, digits=2))")])
@@ -77,8 +77,10 @@ function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true,
         y_pos = n_methods - i + 1
         # Línea desde el eje y hasta el rango
         plot!(plt, [1, rank], [y_pos, y_pos], color=:black, linewidth=1)
+        # Línea desde el eje x hasta el rango
+        plot!(plt, [rank, rank], [n_methods + 0.5, y_pos], color=:black, linewidth=1)
         # Añadir nombre del método
-        annotate!(plt, [(0.8, y_pos, method, :right, :middle, 9)])
+        annotate!(plt, [(0.97, y_pos, (method, :right, 9))])
     end
     
     # Identificar y dibujar grupos de métodos no significativamente diferentes
@@ -101,7 +103,7 @@ function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true,
             min_rank = sorted_ranks[group[1]]
             max_rank = sorted_ranks[group[end]]
             y_pos = n_methods - group[1] + 1 + 0.2
-            plot!(plt, [min_rank, max_rank], [y_pos, y_pos], color=:black, linewidth=2)
+            plot!(plt, [min_rank - 0.1, max_rank + 0.1], [y_pos, y_pos], color=:black, linewidth=2)
         end
     end
     
