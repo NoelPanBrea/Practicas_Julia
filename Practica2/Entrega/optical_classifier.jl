@@ -39,7 +39,10 @@ end
 
 # Cargar los datos de entrenamiento y test
 println("Cargando datos...")
-all_inputs, all_targets = load_optdigits(train_path)
+train_inputs, train_targets = load_optdigits(train_path)
+
+all_inputs = train_inputs
+all_targets = train_targets
 
 # Crear un dataframe para facilitar algunas visualizaciones
 df_data = DataFrame(all_inputs, :auto)
