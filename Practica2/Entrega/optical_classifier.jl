@@ -158,14 +158,14 @@ crossValidationIndices = crossvalidation(train_targets, num_folds)
 
 # Definimos las configuraciones para cada modelo
 topologies = [
-    [32], 
+    [15],
+    [24],
+    [32],
     [64],
-    [128],
-    [32, 16],
-    [64, 32],
-    [128, 64],
-    [64, 32, 16],
-    [128, 64, 32]
+    [2,5],
+    [4,3],
+    [10,10],
+    [16, 16],
 ]
 
 model_configurations = Dict(
