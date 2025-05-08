@@ -22,8 +22,8 @@ end;
 function load_dataset(filename::String)
     data = readdlm(filename, ',');
     # Asumiendo que la última columna es la etiqueta
-    inputs = convert(Array{Float64,2}, data[:, 1:end-1]);
-    targets = convert(Array{Any,1}, data[:, end]);
+    inputs = convert(Array{Float64,2}, data[:, 1:end-2]);
+    targets = convert(Array{Any,1}, data[:, end-1]);
     return (inputs, targets);
 end;
 
@@ -135,6 +135,41 @@ function plot_learning_curve(topology, dataset, cv_indices; fold=1)
     
     return p, ann;
 end;
+function compare_in_between()
+    dataset = load_dataset("Practica2/Entrega/optical+recognition+of+handwritten+digits/optdigits.full")
+    cv_indices = load_cv_indices("Practica2/Entrega/cv_indices.txt")
+    display(compare_numerical_models(dataset, cv_indices, :KNeighborsClassifier, 20)[1])
+end
+
+function compare_svc_configs(dataset, cv_indices)
+   results = []
+end
+
+function compare_numerical_models(dataset, cv_indices, modelType, n)
+    range = 1:3
+    results = []
+    names = []
+    hyperparameter_type = (modelType == :KNeighborsClassifier) ? "n_neighbors" : "max_depth"
+    for i in range
+        println("Evaluando Modelo $modelType con parámeto $hyperparameter_type : $i")
+        result = modelCrossValidation(modelType, Dict(hyperparameter_type => i), dataset, cv_indices)
+        name = "$hyperparameter_type $i"
+        push!(results, result)
+        push!(names, name)
+    end
+    # Graficar comparación
+    accuracy_means = [r[1][1] for r in results]
+    accuracy_stds = [r[1][2] for r in results]
+    
+    p = bar(names, accuracy_means,
+            yerror=accuracy_stds,
+            title="Comparación de configuraciones $modelType",
+            xlabel="configuraciones", 
+            ylabel="precision",
+            legend=false,
+            color=:skyblue)
+    return p, results, names
+end
 
 # Función para comparar diferentes topologías de RNA
 function compare_ann_topologies(dataset, cv_indices)
@@ -197,14 +232,14 @@ function main()
             (:DoME, Dict("maximumNodes" => 20))
         ]
         
-        model_names = ["RNA [5]", "DoME [5]","SVM RBF", "Árbol Decisión", "KNN-3", "DoME"]
+        model_names = ["RNA", "DoME","SVM", "Árbol Decisión", "KNN", "DoME"]
         
         # Ejecutar validación cruzada para cada modelo
         println("\nIniciando validación cruzada...");
         results = [];
         
         for (i, (model_type, hyperparams)) in enumerate(models)
-            println("Evaluando modelo: $(model_names[i])");
+            println("Evaluando modelo: $(model_names[i])", hyperparams);
             result = modelCrossValidation(model_type, hyperparams, dataset, cv_indices);
             push!(results, result);
             print_model_details(model_names[i], result);
@@ -249,4 +284,5 @@ function main()
 end;
 
 # Ejecutar el programa principal
-exit(main());
+# exit(main());
+compare_in_between()

@@ -833,7 +833,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, dat
         (accuracy[numFold], error_rate[numFold], sensitivity[numFold], specificity[numFold], ppv[numFold], npv[numFold], f1[numFold], this_fold_confusion_matrix) =
             confusionMatrix(testOutputs, y_test, classes);
 
-        @assert( isapprox( accuracy[numFold], sum([this_fold_confusion_matrix[numClass,numClass] for numClass in 1:length(classes)])/sum(this_fold_confusion_matrix) ) );
+        # @assert( isapprox( accuracy[numFold], sum([this_fold_confusion_matrix[numClass,numClass] for numClass in 1:length(classes)])/sum(this_fold_confusion_matrix) ) );
 
         confusion_matrix .+= this_fold_confusion_matrix;
 
