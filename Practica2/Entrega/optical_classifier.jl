@@ -1,6 +1,14 @@
 # ------------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------------
+
+using Pkg
+Pkg.add("DataFrames")
+Pkg.add("Plots")
+Pkg.add("StatsPlots")
+Pkg.add("StatsBase")
+Pkg.add("CSV")
+
 include("73166321D_54157616E_48118254T_54152126Y.jl")
 
 using DataFrames
