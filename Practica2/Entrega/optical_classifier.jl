@@ -137,7 +137,7 @@ test_inputs_norm = normalizeMinMax(test_inputs, (min_vals, max_vals))
 println("Preparando configuración de modelos...")
 
 # Creamos índices de cross-validation estratificados basados en las clases
-crossValidationIndices = Int64.(vec(readdlm("Practica2/Entrega/cv_indices.txt", Int32)))
+crossValidationIndices = vec(readdlm("Practica2/Entrega/cv_indices.txt", Int64))
 
 # Definimos las configuraciones para cada modelo
 topologies = [
