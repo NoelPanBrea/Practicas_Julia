@@ -172,6 +172,7 @@ model_configurations = Dict(
     :ANN => [Dict("topology" => t) for t in topologies],  # 8 configuraciones de redes neuronales
     :SVC => [Dict("kernel" => k, "C" => c, "gamma" => 0.1, "coef0" => 0.5, "degree" => 3) 
              for k in ["linear", "rbf", "poly", "sigmoid"] for c in [1, 10]],  # 8 configuraciones SVM
+    :DoME => [Dict("maximumNodes" => n) for n in 5:12], # 8 valores de nodos
     :DecisionTreeClassifier => [Dict("max_depth" => d) for d in [2,4,6,8,10,12]], # 6 valores de profundidad
     :KNeighborsClassifier => [Dict("n_neighbors" => k) for k in [1,3,5,7,9,11]]  # 6 valores de vecinos
 )
