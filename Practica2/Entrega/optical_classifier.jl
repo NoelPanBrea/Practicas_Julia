@@ -170,7 +170,7 @@ topologies = [
 
 model_configurations = Dict(
     :ANN => [Dict("topology" => t) for t in topologies],  # 8 configuraciones de redes neuronales
-    :SVC => [Dict("kernel" => k, "C" => c, "gamma" => "auto", "coef0" => 0.5, "degree" => 3) 
+    :SVC => [Dict("kernel" => k, "C" => c, "gamma" => 0.1, "coef0" => 0.5, "degree" => 3) 
              for k in ["linear", "rbf", "poly", "sigmoid"] for c in [1, 10]],  # 8 configuraciones SVM
     :DecisionTreeClassifier => [Dict("max_depth" => d) for d in 5:12],  # 8 profundidades de árboles
     :KNeighborsClassifier => [Dict("n_neighbors" => k) for k in 1:8]  # 8 valores de vecinos
