@@ -436,7 +436,7 @@ end;
 function trainClassDoME(trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}, testInputs::AbstractArray{<:Real,2}, maximumNodes::Int)
     trainingInputs = convert(AbstractArray{Float64,2}, trainingDataset[1]);
     trainingTargets = convert(AbstractArray{Bool,2}, trainingDataset[2]);
-    num_classes = size(trainingDataset,2);
+    num_classes = size(trainingDataset[2],2);
 
     if num_classes == 1
         result = trainClassDoME((trainingInputs, vec(trainingTargets)), testInputs, maximumNodes);
