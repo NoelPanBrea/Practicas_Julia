@@ -132,7 +132,6 @@ min_vals, max_vals = calculateMinMaxNormalizationParameters(train_inputs)
 
 # Normalizamos ambos conjuntos con los mismos parámetros
 train_inputs_norm = normalizeMinMax(train_inputs, (min_vals, max_vals))
-test_inputs_norm = normalizeMinMax(test_inputs, (min_vals, max_vals))
 
 # ------------------------------------------------------------------
 # Model Setup
