@@ -78,7 +78,7 @@ train_distribution = bar(class_labels_train, class_instances_train, color=colors
                          xlabel="Digit", title="Digit Distribution in Training Set")
 
 # Distribución de clases en el conjunto de test
-class_counts_test = countmap(test_targets)
+class_counts_test = countmap(crossValidationIndices)
 class_labels_test = collect(keys(class_counts_test))
 class_instances_test = collect(values(class_counts_test))
 test_distribution = bar(class_labels_test, class_instances_test, color=colors,
