@@ -27,7 +27,6 @@ Random.seed!(12345)
 # ------------------------------------------------------------------
 # Paths para los archivos de training y testing
 train_path = "Practica2/Entrega/optdigits.full"
-test_path = "Practica2/Entrega/optdigits.tes"
 
 # Función para cargar los datos
 function load_optdigits(filename)
@@ -39,12 +38,7 @@ end
 
 # Cargar los datos de entrenamiento y test
 println("Cargando datos...")
-train_inputs, train_targets = load_optdigits(train_path)
-test_inputs, test_targets = load_optdigits(test_path)
-
-# Combinar para análisis exploratorio
-all_inputs = vcat(train_inputs, test_inputs)
-all_targets = vcat(train_targets, test_targets)
+all_inputs, all_targets = load_optdigits(train_path)
 
 # Crear un dataframe para facilitar algunas visualizaciones
 df_data = DataFrame(all_inputs, :auto)
@@ -53,26 +47,16 @@ df_data.target = all_targets
 num_cols = size(df_data,2)
 feature_cols = num_cols - 1
 
-# Verificar que tengamos 64 columnas de características
-if feature_cols == 64
-    # Crear nombres de columnas para las 64 características
-    new_names = [Symbol("x$i") for i in 1:feature_cols]
+# Crear nombres de columnas para las 64 características
+new_names = [Symbol("x$i") for i in 1:feature_cols]
     
-    # Renombrar solo las columnas de características, dejando la última (target) sin cambios
-    for i in 1:feature_cols
-        rename!(df_data, names(df_data)[i] => new_names[i])
-    end
-else
-    println("Advertencia: El número de columnas de características ($feature_cols) no es el esperado (64)")
-    # Renombrar de todas formas, pero con precaución
-    for i in 1:feature_cols
-        rename!(df_data, names(df_data)[i] => Symbol("x$i"))
-    end
+# Renombrar solo las columnas de características, dejando la última (target) sin cambios
+for i in 1:feature_cols
+    rename!(df_data, names(df_data)[i] => new_names[i])
 end
 
 # Mostrar información básica
 println("Dimensiones de los datos de entrenamiento: ", size(train_inputs))
-println("Dimensiones de los datos de test: ", size(test_inputs))
 println("Clases en el conjunto de entrenamiento: ", sort(unique(train_targets)))
 
 # ------------------------------------------------------------------
@@ -154,7 +138,7 @@ println("Preparando configuración de modelos...")
 # Dividimos el conjunto de entrenamiento para validación cruzada
 num_folds = 5
 # Creamos índices de cross-validation estratificados basados en las clases
-crossValidationIndices = crossvalidation(train_targets, num_folds)
+crossValidationIndices = readdlm("Practica2/Entrega/cv_indices.txt", Int32)
 
 # Definimos las configuraciones para cada modelo
 topologies = [
