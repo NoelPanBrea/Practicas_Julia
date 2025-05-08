@@ -10,6 +10,7 @@ Pkg.add("StatsBase")
 Pkg.add("CSV")
 
 include("73166321D_54157616E_48118254T_54152126Y.jl")
+include("index.jl")
 
 using DataFrames
 using Dates
@@ -135,8 +136,6 @@ test_inputs_norm = normalizeMinMax(test_inputs, (min_vals, max_vals))
 # ------------------------------------------------------------------
 println("Preparando configuración de modelos...")
 
-# Dividimos el conjunto de entrenamiento para validación cruzada
-num_folds = 5
 # Creamos índices de cross-validation estratificados basados en las clases
 crossValidationIndices = readdlm("Practica2/Entrega/cv_indices.txt", Int32)
 
