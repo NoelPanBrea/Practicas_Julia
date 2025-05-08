@@ -26,8 +26,8 @@ Random.seed!(12345)
 # Data Processing
 # ------------------------------------------------------------------
 # Paths para los archivos de training y testing
-train_path = "optdigits.tra"
-test_path = "optdigits.tes"
+train_path = "Practica2/Entrega/optdigits.full"
+test_path = "Practica2/Entrega/optdigits.tes"
 
 # Función para cargar los datos
 function load_optdigits(filename)
@@ -49,8 +49,26 @@ all_targets = vcat(train_targets, test_targets)
 # Crear un dataframe para facilitar algunas visualizaciones
 df_data = DataFrame(all_inputs, :auto)
 df_data.target = all_targets
-rename!(df_data, [Symbol("x$i") for i in 1:64])
-rename!(df_data, :x65 => :target)
+
+num_cols = size(df_data,2)
+feature_cols = num_cols - 1
+
+# Verificar que tengamos 64 columnas de características
+if feature_cols == 64
+    # Crear nombres de columnas para las 64 características
+    new_names = [Symbol("x$i") for i in 1:feature_cols]
+    
+    # Renombrar solo las columnas de características, dejando la última (target) sin cambios
+    for i in 1:feature_cols
+        rename!(df_data, names(df_data)[i] => new_names[i])
+    end
+else
+    println("Advertencia: El número de columnas de características ($feature_cols) no es el esperado (64)")
+    # Renombrar de todas formas, pero con precaución
+    for i in 1:feature_cols
+        rename!(df_data, names(df_data)[i] => Symbol("x$i"))
+    end
+end
 
 # Mostrar información básica
 println("Dimensiones de los datos de entrenamiento: ", size(train_inputs))
