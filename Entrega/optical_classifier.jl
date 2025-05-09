@@ -285,7 +285,7 @@ topologies = [
 ]
 
 model_configurations = Dict(
-    :ANN => [Dict("topology" => t) for t in topologies],  # 8 neural network configurations
+    :ANN => [Dict("topology" => t, "maxEpochs" => 100) for t in topologies],  # 8 neural network configurations
     :SVC => [Dict("kernel" => k, "C" => c, "gamma" => 0.1, "coef0" => 0.5, "degree" => 3) 
              for k in ["linear", "rbf", "poly", "sigmoid"] for c in [1, 10]],  # 8 SVM configurations
     :DoME => [Dict("maximumNodes" => n) for n in 5:12], # 8 node values
