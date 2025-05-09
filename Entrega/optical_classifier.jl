@@ -10,7 +10,6 @@ Pkg.add("StatsBase")
 Pkg.add("CSV")
 
 include("73166321D_54157616E_48118254T_54152126Y.jl")
-include("index.jl")  # Includes the index.jl file
 
 using DataFrames
 using Dates
@@ -31,23 +30,23 @@ function load_optdigits(filename)
 end
 
 function generate_cv_indices(filename)
-    
     dataset_file = filename
     
     try
         println("Loading dataset from: ", dataset_file)
-        dataset = load_example_dataset(dataset_file)
+        inputs, targets = load_optdigits(dataset_file)
         
         k = 5
         println("Generating indices for $k-fold cross validation...")
         
-        cv_indices = crossvalidation(dataset, k)
+        # Modify this line to match the expected signature
+        # Instead of passing the whole dataset, you likely need to pass just the targets
+        cv_indices = crossvalidation(targets, k)
         
         test_indices = findall(x -> x == 1, cv_indices)
         
         indices_file = "Entrega/cv_indices.txt"
         writedlm(indices_file, test_indices)
-        println("Test indices saved to: ", indices_file)
         
         return test_indices
         
