@@ -139,6 +139,7 @@ end
 
 # Load all data
 println("Loading data...")
+data_path  = "Entrega/optdigits.full"
 all_inputs, all_targets = load_optdigits(data_path)
 
 # Create a dataframe for easier visualization
@@ -448,7 +449,7 @@ cd_diagram = create_cd_diagram(
 println("Generando tablas de métricas para cada modelo...")
 
 # Directorio para guardar las tablas
-tables_dir = "Entrega/tables"
+tables_dir = "Entrega/Tablas"
 mkpath(tables_dir)
 
 # Función para generar tabla LaTeX con resultados detallados
