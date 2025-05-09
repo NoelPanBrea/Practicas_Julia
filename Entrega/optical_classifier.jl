@@ -1,10 +1,33 @@
+
+using Pkg
+# Only uncomment if you need to install these packages
+# Pkg.add("DataFrames")
+# Pkg.add("Plots")
+# Pkg.add("StatsPlots")
+# Pkg.add("StatsBase")
+# Pkg.add("CSV")
+Pkg.add("Printf")
+
+include("73166321D_54157616E_48118254T_54152126Y.jl")
+
+using DataFrames
+using Dates
+using Plots
+using StatsPlots
+using Random
+using StatsBase
+using Statistics
+using CSV
+using DelimitedFiles
+using Printf
+Random.seed!(12345)
+
+data_path = "Entrega/optdigits.full"
+tables_dir = "Entrega/tables"
+
 # ------------------------------------------------------------------
 # Critical Difference Diagram Implementation
 # ------------------------------------------------------------------
-using Plots
-using Statistics
-using StatsBase
-using Random
 
 function create_cd_diagram(methods::Vector{String}, performances::AbstractMatrix{<:Real};
                           α::Real=0.05, lower_is_better::Bool=true, 
@@ -97,27 +120,6 @@ end
 # Dependencies
 # ------------------------------------------------------------------
 
-using Pkg
-# Only uncomment if you need to install these packages
-# Pkg.add("DataFrames")
-# Pkg.add("Plots")
-# Pkg.add("StatsPlots")
-# Pkg.add("StatsBase")
-# Pkg.add("CSV")
-
-include("73166321D_54157616E_48118254T_54152126Y.jl")
-
-using DataFrames
-using Dates
-using Plots
-using StatsPlots
-using Random
-using StatsBase
-using Statistics
-using CSV
-using DelimitedFiles
-Random.seed!(12345)
-
 function load_optdigits(filename)
     data = readdlm(filename, ',')
     inputs = convert(Matrix{Float32}, data[:, 1:64])
@@ -153,7 +155,6 @@ end
 # ------------------------------------------------------------------
 # Data Processing
 # ------------------------------------------------------------------
-data_path = "Entrega/optdigits.full"
 
 # Load all data
 println("Loading data...")
@@ -373,6 +374,7 @@ annotate!([(i, accuracies[i] + 0.002, text(string(round(accuracies[i] * 100, dig
 # ------------------------------------------------------------------
 # Confusion Matrix for the Best Model
 # ------------------------------------------------------------------
+#=
 println("Generating confusion matrix for the best model...")
 
 # Find the best overall model
@@ -493,7 +495,196 @@ cd_diagram = create_cd_diagram(
     title="ML Model Comparison",
     figsize=(900, 500)
 )
+=#
+# ------------------------------------------------------------------
+# Generación de tablas detalladas con métricas
+# ------------------------------------------------------------------
+println("Generando tablas de métricas para cada modelo...")
 
+# Directorio para guardar las tablas
+mkpath(tables_dir)
+
+# Función para generar tabla LaTeX con resultados detallados
+function generate_normal_table(model_type::Symbol, results, column_header::String)
+    filename = joinpath(tables_dir, "tabla_$(string(model_type)).txt")
+    
+    open(filename, "w") do file
+        # Crear un título según el tipo de modelo
+        title = if model_type == :ANN
+            "Rendimiento de diferentes topologías de redes neuronales artificiales (ANN)"
+        elseif model_type == :SVC
+            "Rendimiento de diferentes configuraciones de SVM"
+        elseif model_type == :DoME
+            "Rendimiento de diferentes configuraciones de DoME"
+        elseif model_type == :DecisionTreeClassifier
+            "Rendimiento de diferentes configuraciones de árboles de decisión"
+        elseif model_type == :KNeighborsClassifier
+            "Rendimiento de diferentes configuraciones de k-NN"
+        end
+        
+        # Escribir el título
+        write(file, title * "\n")
+        write(file, "=" ^ length(title) * "\n\n")
+        
+        # Crear encabezados con formato fijo
+        header = string(
+            rpad(column_header, 15), " | ",
+            rpad("Precisión", 10), " | ",
+            rpad("Desv. Est.", 10), " | ",
+            rpad("Error", 10), " | ",
+            rpad("Sensibilidad", 10), " | ",
+            rpad("Especificidad", 10), " | ",
+            rpad("F1-Score", 10)
+        )
+        write(file, header * "\n")
+        
+        # Línea divisoria
+        divider = "-" ^ 90
+        write(file, divider * "\n")
+        
+        # Encontrar el índice del mejor resultado
+        best_index = argmax([r[2][1][1] for r in results])
+        
+        # Añadir filas para cada configuración
+        for (i, result) in enumerate(results)
+            config = result[1]
+            metrics = result[2]
+            
+            # Extraer las métricas
+            mean_acc, std_acc = metrics[1]
+            mean_err, _ = metrics[2]
+            mean_sens, _ = metrics[3]
+            mean_spec, _ = metrics[4]
+            mean_f1, _ = metrics[7]
+            
+            # Formatear la configuración como string según el tipo de modelo
+            config_str = if model_type == :ANN
+                "[" * join(string.(config["topology"]), ",") * "]"
+            elseif model_type == :SVC
+                config["kernel"] * "-C" * string(config["C"])
+            elseif model_type == :DoME
+                string(config["maximumNodes"])
+            elseif model_type == :DecisionTreeClassifier
+                string(config["max_depth"])
+            elseif model_type == :KNeighborsClassifier
+                string(config["n_neighbors"])
+            else
+                string(config)
+            end
+            
+            # Marcar con * el mejor resultado
+            if i == best_index
+                config_str = config_str * " *"
+            end
+            
+            # Crear la fila con formato fijo
+            row = string(
+                rpad(config_str, 15), " | ",
+                rpad(string(round(mean_acc, digits=4)), 10), " | ",
+                rpad(string(round(std_acc, digits=4)), 10), " | ",
+                rpad(string(round(mean_err, digits=4)), 10), " | ",
+                rpad(string(round(mean_sens, digits=4)), 10), " | ",
+                rpad(string(round(mean_spec, digits=4)), 10), " | ",
+                rpad(string(round(mean_f1, digits=4)), 10)
+            )
+            write(file, row * "\n")
+        end
+        
+        write(file, divider * "\n")
+        write(file, "* = Mejor configuración\n")
+    end
+    
+    # También mostrar la tabla en la consola
+    println("\n=== TABLA DE RESULTADOS PARA $model_type ===")
+    
+    # Encabezados para consola
+    header = string(
+        rpad(column_header, 15), " | ",
+        rpad("Precisión", 10), " | ",
+        rpad("Desv. Est.", 10), " | ",
+        rpad("Error", 10), " | ",
+        rpad("Sensib.", 10), " | ",
+        rpad("Especif.", 10), " | ",
+        rpad("F1-Score", 10)
+    )
+    println(header)
+    
+    # Línea divisoria
+    divider = "-" ^ 90
+    println(divider)
+    
+    # Imprimir filas para consola
+    best_index = argmax([r[2][1][1] for r in results])
+    for (i, result) in enumerate(results)
+        config = result[1]
+        metrics = result[2]
+        
+        # Extraer las métricas
+        mean_acc, std_acc = metrics[1]
+        mean_err, _ = metrics[2]
+        mean_sens, _ = metrics[3]
+        mean_spec, _ = metrics[4]
+        mean_f1, _ = metrics[7]
+        
+        # Formatear la configuración como string según el tipo de modelo
+        config_str = if model_type == :ANN
+            "[" * join(string.(config["topology"]), ",") * "]"
+        elseif model_type == :SVC
+            config["kernel"] * "-C" * string(config["C"])
+        elseif model_type == :DoME
+            string(config["maximumNodes"])
+        elseif model_type == :DecisionTreeClassifier
+            string(config["max_depth"])
+        elseif model_type == :KNeighborsClassifier
+            string(config["n_neighbors"])
+        else
+            string(config)
+        end
+        
+        # Marcar con * el mejor resultado
+        if i == best_index
+            config_str = config_str * " *"
+        end
+        
+        # Crear la fila con formato fijo para consola
+        row = string(
+            rpad(config_str, 15), " | ",
+            rpad(string(round(mean_acc, digits=4)), 10), " | ",
+            rpad(string(round(std_acc, digits=4)), 10), " | ",
+            rpad(string(round(mean_err, digits=4)), 10), " | ",
+            rpad(string(round(mean_sens, digits=4)), 10), " | ",
+            rpad(string(round(mean_spec, digits=4)), 10), " | ",
+            rpad(string(round(mean_f1, digits=4)), 10)
+        )
+        println(row)
+    end
+    
+    println(divider)
+    println("* = Mejor configuración")
+    println()
+    
+    println("Tabla para $model_type generada: $filename")
+    return nothing
+end
+
+# Generar tablas para cada tipo de modelo
+for (modeltype, results) in all_results
+    column_header = if modeltype == :ANN
+        "Topología"
+    elseif modeltype == :SVC
+        "Configuración"
+    elseif modeltype == :DoME
+        "Nodos Máx."
+    elseif modeltype == :DecisionTreeClassifier
+        "Prof. Máx."
+    elseif modeltype == :KNeighborsClassifier
+        "Vecinos"
+    else
+        "Configuración"
+    end
+    
+    generate_normal_table(modeltype, results, column_header)
+end
 # ------------------------------------------------------------------
 # Save Results
 # ------------------------------------------------------------------
