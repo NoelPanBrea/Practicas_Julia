@@ -274,7 +274,7 @@ println("Setting up model configurations...")
 
 # Define model configurations
 topologies = [
-    [1],
+    [15],
     [24],
     [32],
     [64],
