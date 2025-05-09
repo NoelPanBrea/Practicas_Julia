@@ -648,79 +648,102 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     numExecutions::Int=50,
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20)
-    classes = unique(dataset[2]);
-    num_classes = length(classes)
-    targets = oneHotEncoding(dataset[2], classes);
-    inputs = dataset[1];
-    folds = maximum(crossValidationIndices);
-    vector_precision = [];
-    vector_tasa_de_error = [];
-    vector_sensibilidad = [];
-    vector_especificidad = [];
-    vector_valor_predictivo_positivo = [];
-    vector_valor_predictivo_negativo = [];
-    vector_f1 = [];
-    mat = zeros(Float32, num_classes, num_classes);
-    cnt = 0;
-    while cnt < folds
-        cnt += 1;
-        testRatio = 1 / folds;
-        fold_train_inputs = inputs[findall(x -> (x != cnt), crossValidationIndices), :];
-        fold_train_targets = targets[findall(x -> (x != cnt), crossValidationIndices), :];
-        fold_test_inputs = inputs[findall(x -> (x == cnt), crossValidationIndices), :];
-        fold_test_targets = targets[findall(x -> (x == cnt), crossValidationIndices), :];
-        validationDataset = (Array{eltype(fold_train_inputs), 2}(undef, 0, size(fold_train_inputs, 2)),
-        falses(0, size(fold_train_targets, 2)));
-        if validationRatio > 0
-            train, val = holdOut(size(fold_train_inputs, 1), validationRatio / (1 - testRatio));
-            fold_val_inputs = fold_train_inputs[val, :];
-            fold_val_targets = fold_train_targets[val, :];
-            fold_train_inputs = fold_train_inputs[train, :];
-            fold_train_targets = fold_train_targets[train, :];
-            validationDataset = (fold_val_inputs, fold_val_targets);
+    
+    (inputs,targets) = dataset;
+
+    # Comprobamos que el numero de patrones coincide
+    @assert(size(inputs,1)==length(targets));
+
+    # Que clases de salida tenemos
+    classes = unique(targets);
+
+    # Primero codificamos las salidas deseadas en caso de entrenar RR.NN.AA.
+    targets = oneHotEncoding(targets, classes);
+
+    # Creamos los vectores para las metricas que se vayan a usar
+    numFolds = maximum(crossValidationIndices);
+    testAccuracy    = Array{Float64,1}(undef, numFolds);
+    testErrorRate   = Array{Float64,1}(undef, numFolds);
+    testRecall      = Array{Float64,1}(undef, numFolds);
+    testSpecificity = Array{Float64,1}(undef, numFolds);
+    testPrecision   = Array{Float64,1}(undef, numFolds);
+    testNPV         = Array{Float64,1}(undef, numFolds);
+    testF1          = Array{Float64,1}(undef, numFolds);
+    testConfusionMatrix = zeros(length(classes), length(classes));
+
+    # Para cada fold, entrenamos
+    for numFold in 1:numFolds
+
+        # Dividimos los datos en entrenamiento y test
+        trainingInputs    = inputs[crossValidationIndices.!=numFold,:];
+        testInputs        = inputs[crossValidationIndices.==numFold,:];
+        trainingTargets   = targets[crossValidationIndices.!=numFold,:];
+        testTargets       = targets[crossValidationIndices.==numFold,:];
+
+        # Como el entrenamiento de RR.NN.AA. es no determinístico, hay que entrenar varias veces, y
+        #  se crean vectores adicionales para almacenar las metricas para cada entrenamiento
+        testAccuracyEachRepetition        = Array{Float64,1}(undef, numExecutions);
+        testErrorRateEachRepetition       = Array{Float64,1}(undef, numExecutions);
+        testRecallEachRepetition          = Array{Float64,1}(undef, numExecutions);
+        testSpecificityEachRepetition     = Array{Float64,1}(undef, numExecutions);
+        testPrecisionEachRepetition       = Array{Float64,1}(undef, numExecutions);
+        testNPVEachRepetition             = Array{Float64,1}(undef, numExecutions);
+        testF1EachRepetition              = Array{Float64,1}(undef, numExecutions);
+        testConfusionMatrixEachRepetition = Array{Float64,3}(undef, length(classes), length(classes), numExecutions);
+
+        # Se entrena las veces que se haya indicado
+        for numTraining in 1:numExecutions
+
+            if validationRatio>0
+
+                # Para el caso de entrenar una RNA con conjunto de validacion, hacemos una división adicional:
+                #  dividimos el conjunto de entrenamiento en entrenamiento+validacion
+                #  Para ello, hacemos un hold out
+                (trainingIndices, validationIndices) = holdOut(size(trainingInputs,1), validationRatio*size(inputs,1)/size(trainingInputs,1));
+                # Con estos indices, se pueden crear los vectores finales que vamos a usar para entrenar una RNA
+                # Otra forma de hacer el mismo cálculo:
+                # (trainingIndices, validationIndices) = holdOut(size(trainingInputs,1), validationRatio*numFolds/(numFolds-1));
+
+                # Entrenamos la RNA, teniendo cuidado de codificar las salidas deseadas correctamente
+                ann, = trainClassANN(topology, (trainingInputs[trainingIndices,:],   trainingTargets[trainingIndices,:]),
+                    validationDataset = (trainingInputs[validationIndices,:], trainingTargets[validationIndices,:]),
+                    testDataset =       (testInputs,                          testTargets);
+                    transferFunctions = transferFunctions,
+                    maxEpochs=maxEpochs, minLoss=minLoss, learningRate=learningRate, maxEpochsVal=maxEpochsVal);
+                    
+            else
+
+                # Si no se desea usar conjunto de validacion, se entrena unicamente con conjuntos de entrenamiento y test,
+                #  teniendo cuidado de codificar las salidas deseadas correctamente
+                ann, = trainClassANN(topology, (trainingInputs, trainingTargets),
+                    testDataset = (testInputs,     testTargets);
+                    transferFunctions=transferFunctions,
+                    maxEpochs=maxEpochs, minLoss=minLoss, learningRate=learningRate);
+
+            end;
+
+            # Calculamos las metricas correspondientes con la funcion desarrollada en el ejercicio anterior
+            (testAccuracyEachRepetition[numTraining], testErrorRateEachRepetition[numTraining], testRecallEachRepetition[numTraining], testSpecificityEachRepetition[numTraining], testPrecisionEachRepetition[numTraining], testNPVEachRepetition[numTraining], testF1EachRepetition[numTraining], testConfusionMatrixEachRepetition[:,:,numTraining]) =
+                confusionMatrix(collect(ann(Float32.(testInputs'))'), testTargets);
+
+            @assert( isapprox( testAccuracyEachRepetition[numTraining], sum([testConfusionMatrixEachRepetition[numClass,numClass,numTraining] for numClass in 1:length(classes)])/sum(testConfusionMatrixEachRepetition[:,:,numTraining]) ) );
+
         end;
-        fold_precision = [];
-        fold_tasa_de_error = [];
-        fold_sensibilidad = [];
-        fold_especificidad = [];
-        fold_valor_predictivo_positivo = [];
-        fold_valor_predictivo_negativo = [];
-        fold_f1 = [];
-        fold_mat = [];
-        cnt2 = 0;
-        while cnt2 < numExecutions
-            cnt2 += 1;
-            ann, train_losses, val_losses, test_losses  = trainClassANN(topology, (fold_train_inputs, fold_train_targets),
-            validationDataset = validationDataset, 
-            testDataset = (fold_test_inputs, fold_test_targets),
-            transferFunctions = transferFunctions, maxEpochs = maxEpochs,
-            minLoss = minLoss, learningRate = learningRate, maxEpochsVal = maxEpochsVal);
-            precision, tasa_error, sensibilidad,
-            especificidad, valor_predictivo_positivo,
-            valor_predictivo_negativo, f1_score, matriz_confusion = confusionMatrix(ann(fold_test_inputs')', fold_test_targets);
-            push!(fold_precision, precision);
-            push!(fold_tasa_de_error, tasa_error);
-            push!(fold_sensibilidad, sensibilidad);
-            push!(fold_especificidad, especificidad);
-            push!(fold_valor_predictivo_positivo, valor_predictivo_positivo);
-            push!(fold_valor_predictivo_negativo, valor_predictivo_negativo);
-            push!(fold_f1, f1_score);
-            push!(fold_mat, matriz_confusion);
-        end;
-        push!(vector_precision, mean(fold_precision));
-        push!(vector_tasa_de_error, mean(fold_tasa_de_error));
-        push!(vector_sensibilidad, mean(fold_sensibilidad));
-        push!(vector_especificidad, mean(fold_especificidad));
-        push!(vector_valor_predictivo_positivo, mean(fold_valor_predictivo_positivo));
-        push!(vector_valor_predictivo_negativo, mean(fold_valor_predictivo_negativo));
-        push!(vector_f1, mean(fold_f1));
-        mat += mat + fold_mat;
-    end;
-    return ((mean(vector_precision), std(vector_precision)), (mean(vector_tasa_de_error), std(vector_tasa_de_error)),
-    (mean(vector_sensibilidad), std(vector_sensibilidad)), (mean(vector_especificidad), std(vector_especificidad)),
-    (mean(vector_valor_predictivo_positivo), std(vector_valor_predictivo_positivo)),
-    (mean(vector_valor_predictivo_negativo), std(vector_valor_predictivo_negativo)),
-    (mean(vector_f1), std(vector_f1)), mat)
+
+        # Almacenamos las metricas como una media de las obtenidas en los entrenamientos de este fold
+        testAccuracy[numFold]    = mean(testAccuracyEachRepetition);
+        testErrorRate[numFold]   = mean(testErrorRateEachRepetition);
+        testRecall[numFold]      = mean(testRecallEachRepetition);
+        testSpecificity[numFold] = mean(testSpecificityEachRepetition);
+        testPrecision[numFold]   = mean(testPrecisionEachRepetition);
+        testNPV[numFold]         = mean(testNPVEachRepetition);
+        testF1[numFold]          = mean(testF1EachRepetition);
+        testConfusionMatrix    .+= mean(testConfusionMatrixEachRepetition, dims=3)[:,:,1];
+
+    end; # for numFold in 1:numFolds
+
+    return (mean(testAccuracy), std(testAccuracy)), (mean(testErrorRate), std(testErrorRate)), (mean(testRecall), std(testRecall)), (mean(testSpecificity), std(testSpecificity)), (mean(testPrecision), std(testPrecision)), (mean(testNPV), std(testNPV)), (mean(testF1), std(testF1)), testConfusionMatrix;
+
 end;
 
 
