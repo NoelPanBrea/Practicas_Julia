@@ -20,7 +20,7 @@ end;
 
 function main()
     # Nombre del archivo del dataset
-    dataset_file = "Practica2/Entrega/optdigits.full";
+    dataset_file = "Entrega/optdigits.full";
     
     try
         println("Cargando dataset desde: ", dataset_file);
@@ -35,7 +35,7 @@ function main()
         cv_indices = crossvalidation(dataset[2], k);
         
         # Guardar los índices en un archivo
-        indices_file = "Practica2/Entrega/cv_indices.txt";
+        indices_file = "Entrega/cv_indices.txt";
         writedlm(indices_file, cv_indices);
         println("Índices guardados en: ", indices_file);
         

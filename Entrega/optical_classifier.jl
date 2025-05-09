@@ -27,7 +27,7 @@ Random.seed!(12345)
 # Data Processing
 # ------------------------------------------------------------------
 # Paths para los archivos de training y testing
-train_path = "Practica2/Entrega/optdigits.full"
+train_path = "Entrega/optdigits.full"
 
 # Función para cargar los datos
 function load_optdigits(filename)
@@ -139,7 +139,7 @@ train_inputs_norm = normalizeMinMax(train_inputs, (min_vals, max_vals))
 println("Preparando configuración de modelos...")
 
 # Creamos índices de cross-validation estratificados basados en las clases
-crossValidationIndices = vec(readdlm("Practica2/Entrega/cv_indices.txt", Int64))
+crossValidationIndices = vec(readdlm("Entrega/cv_indices.txt", Int64))
 
 # Definimos las configuraciones para cada modelo
 topologies = [
