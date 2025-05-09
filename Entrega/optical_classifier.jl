@@ -275,10 +275,10 @@ topologies = [
 
 model_configurations = Dict(
     # :ANN => [Dict("topology" => t, "maxEpochs" => 100) for t in topologies],  # 8 neural network configurations
-    # :SVC => [Dict("kernel" => k, "C" => c, "gamma" => 0.1, "coef0" => 0.5, "degree" => 3) 
-    #          for k in ["linear", "rbf", "poly", "sigmoid"] for c in [1, 10]],  # 8 SVM configurations
-    # :DoME => [Dict("maximumNodes" => n) for n in 5:12], # 8 node values
-    # :DecisionTreeClassifier => [Dict("max_depth" => d) for d in 7:12], # 6 depth values
+    :SVC => [Dict("kernel" => k, "C" => c, "gamma" => 0.1, "coef0" => 0.5, "degree" => 3) 
+             for k in ["linear", "rbf", "poly", "sigmoid"] for c in [1, 10]],  # 8 SVM configurations
+    :DoME => [Dict("maximumNodes" => n) for n in 5:12], # 8 node values
+    :DecisionTreeClassifier => [Dict("max_depth" => d) for d in 7:12], # 6 depth values
     :KNeighborsClassifier => [Dict("n_neighbors" => k) for k in [1,3,5,7,9,11]]  # 6 neighbor values
 )
 
@@ -288,8 +288,6 @@ model_configurations = Dict(
 println("Training and evaluating models...")
 all_results = Dict()
 model_configuration_array = collect(pairs(model_configurations))
-
-# Generate stratified k-fold indices for the training data
 
 # Run cross-validation for each model configuration
 for (modeltype, configs) in model_configuration_array
@@ -309,14 +307,37 @@ end
 
 # Create a dataframe with the results
 println("Generating results...")
-column_names = ["Model", "Params", "Mean Accuracy", "Std Accuracy"]
-df_result = DataFrame(Model=String[], Params=Any[], Mean_Accuracy=Float64[], Std_Accuracy=Float64[])
+column_names = ["Model", "Params",
+"Mean Accuracy", "Std Accuracy",
+"Mean Error Rate", "Std Error Rate",
+"Mean Sensitivity", "Std Sensitivity",
+"Mean Specificity", "Std Specificity",
+"Mean Precision", "Std Precision",
+"Mean NPV", "Std NPV",
+"Mean F1", "Std F1"]
+df_result = DataFrame(Model=String[], Params=Any[],
+Mean_Accuracy=Float64[], Std_Accuracy=Float64[],
+Mean_Error_Rate=Float64[], Std_Error_Rate=Float64[],
+Mean_Sensitivity=Float64[], Std_Sensitivity=Float64[],
+Mean_Specificity=Float64[], Std_Specificity=Float64[],
+Mean_Precision=Float64[], Std_Precision=Float64[],
+Mean_NPV=Float64[], Std_NPV=Float64[],
+Mean_F1=Float64[], Std_F1=Float64[],
+
+    )
 for (modeltype, results) in all_results
     for result in results
         config = result[1]
         mean_acc = result[2][1][1]
         std_acc = result[2][1][2]
-        push!(df_result, (String(modeltype), config, mean_acc, std_acc))
+        push!(df_result, (String(modeltype), config,
+        mean_acc, std_acc,
+        result[2][2][1], result[2][2][2],
+        result[2][3][1], result[2][3][2],
+        result[2][4][1], result[2][4][2],
+        result[2][5][1], result[2][5][2],
+        result[2][6][1], result[2][6][2],
+        result[2][7][1], result[2][7][2]))
     end
 end
 
@@ -333,28 +354,6 @@ for (modeltype, results) in all_results
     best_result = sort(results, by=x -> x[2][1][1], rev=true)[1]
     best_configs[modeltype] = best_result
 end
-
-# # Get model types from Dict for plotting
-# model_types = [string(k) for k in keys(best_configs)]
-# # Extract accuracies
-# accuracies = [v[2][1][1] for v in values(best_configs)]
-
-# # Adjust plots for better visualization
-# min_accuracy, max_accuracy = minimum(accuracies), maximum(accuracies)
-# padding = (max_accuracy - min_accuracy) * 0.1
-# ylims_range = (min_accuracy - padding, max_accuracy + padding * 2)
-
-# acc_comparison = bar(model_types, accuracies, legend=false,
-#     ylabel="Accuracy (%)", xlabel="Model Type",
-#     title="Comparison of Best Model Accuracies",
-#     ylims=ylims_range,
-#     yticks=round(min_accuracy - padding, digits=3):0.005:round(max_accuracy + padding * 2, digits=3),
-#     bar_width=0.5,
-#     color=[:lightblue, :lightgreen, :lightcoral, :lightpink, :lightyellow],
-#     size=(800, 600))
-
-# # Add percentage to each bar
-# annotate!([(i, accuracies[i] + 0.002, text(string(round(accuracies[i] * 100, digits=2)) * "%", 10)) for i in 1:length(accuracies)])
 
 # ------------------------------------------------------------------
 # Confusion Matrix for the Best Model of each kind
@@ -392,7 +391,6 @@ println("Generating critical difference diagram...")
 
 
 performances = zeros(k, length(best_configs))
-method_list = []
 for (j, (modelType, result)) in enumerate(collect(pairs(best_configs)))
     fold_performance = []
     for i in 1:k
@@ -416,56 +414,48 @@ for (j, (modelType, result)) in enumerate(collect(pairs(best_configs)))
                 test_inputs_fold, 
                 result[1]["maximumNodes"]
             )
-        elseif modelType == :SVC  # For other models, just use the correct functions from the library
+        else
+            if modelType == :SVC  # For other models, just use the correct functions from the library
 
-            model = SVMClassifier(
-                kernel = 
-                    result[1]["kernel"]=="linear"  ? LIBSVM.Kernel.Linear :
-                    result[1]["kernel"]=="rbf"     ? LIBSVM.Kernel.RadialBasis :
-                    result[1]["kernel"]=="poly"    ? LIBSVM.Kernel.Polynomial :
-                    result[1]["kernel"]=="sigmoid" ? LIBSVM.Kernel.Sigmoid : nothing,
-                cost = Float64(results[1]["C"]),
-                gamma = Float64(get(result[1], "gamma",  -1)),
-                degree = Int32(get(result[1], "degree", -1)),
-                coef0 = Float64(get(result[1], "coef0",  -1))
-            )
-        elseif modelType == :DecisionTreeClassifier
-            model = DTClassifier(max_depth = result[1]["max_depth"], rng=Random.MersenneTwister(1))
-        elseif modelType == :KNeighborsClassifier
-            model = kNNClassifier(K = result[1]["n_neighbors"])
-        end
+                model = SVMClassifier(
+                    kernel = 
+                        result[1]["kernel"]=="linear"  ? LIBSVM.Kernel.Linear :
+                        result[1]["kernel"]=="rbf"     ? LIBSVM.Kernel.RadialBasis :
+                        result[1]["kernel"]=="poly"    ? LIBSVM.Kernel.Polynomial :
+                        result[1]["kernel"]=="sigmoid" ? LIBSVM.Kernel.Sigmoid : nothing,
+                    cost = Float64(result[1]["C"]),
+                    gamma = Float64(get(result[1], "gamma",  -1)),
+                    degree = Int32(get(result[1], "degree", -1)),
+                    coef0 = Float64(get(result[1], "coef0",  -1))
+                )
+            elseif modelType == :DecisionTreeClassifier
+                model = DTClassifier(max_depth = result[1]["max_depth"], rng=Random.MersenneTwister(1))
+            elseif modelType == :KNeighborsClassifier
+                model = kNNClassifier(K = result[1]["n_neighbors"])
+            end
         
-        # Create and train the machine
-        mach = machine(model, MLJ.table(train_inputs_fold), categorical(train_targets_fold))
-        MLJ.fit!(mach, verbosity=0)
         
-        # Get predictions
-        test_outputs = MLJ.predict(mach, MLJ.table(test_inputs_fold))
-        if modelType != :SVC
-            test_outputs = mode.(test_outputs)
+            # Create and train the machine
+            mach = machine(model, MLJ.table(train_inputs_fold), categorical(train_targets_fold))
+            MLJ.fit!(mach, verbosity=0)
+            
+            # Get predictions
+            test_outputs = MLJ.predict(mach, MLJ.table(test_inputs_fold))
+            if modelType != :SVC
+                test_outputs = mode.(test_outputs)
+            end
+            test_outputs = accuracy(oneHotEncoding(test_outputs), oneHotEncoding(test_targets_fold))
         end
-        test_outputs = accuracy(oneHotEncoding(test_outputs), oneHotEncoding(test_targets_fold))
+        if modelType == :DoME
+            test_outputs = accuracy(oneHotEncoding(test_outputs), oneHotEncoding(test_targets_fold))
+        end
         push!(fold_performance, test_outputs)
     end
     performances[:, j] = fold_performance
-    push!(method_list, "$modelType")
 end
 
 # Create CD diagram
-performances = [
-    0.15 0.21 0.19 0.25 0.22;
-    0.12 0.18 0.15 0.20 0.17;
-    0.19 0.15 0.22 0.18 0.20;
-    0.14 0.21 0.16 0.23 0.19;
-    0.16 0.19 0.18 0.22 0.20;
-    0.13 0.18 0.17 0.21 0.19;
-    0.17 0.20 0.15 0.22 0.18;
-    0.15 0.17 0.19 0.23 0.21;
-    0.18 0.16 0.20 0.24 0.19;
-    0.16 0.19 0.17 0.21 0.18
-]
-method_list = ["Método A", "Método B", "Método C", "Método D", "Método E"]
-
+method_list = ["DTC", "SVC", "DoME", "KNN"]
 cd_diagram = create_cd_diagram(
     Vector{String}(method_list), 
     performances, 
@@ -483,11 +473,10 @@ println("Saving results...")
 # Create directory for plots if it doesn't exist
 mkpath("Entrega/plots")
 mkpath("Entrega/plots/ConfusionHeatmaps")
-mkpath("Entrega/plots/Boxplots")
 
 
 # Save results dataframe
-CSV.write("Entrega/results_optdigits.csv", sorted_df)
+CSV.write("Entrega/results_optdigits.csv", df_result)
 
 # Save plots
 savefig(class_distribution, "Entrega/plots/class_distribution")
@@ -498,15 +487,5 @@ for (modelType, confusion_heatmap) in confusion_heatmaps
 end
 savefig(digit_grid, "Entrega/plots/digit_samples")
 savefig(cd_diagram, "Entrega/plots/cd_diagram")
-
-# # Save selected histograms
-# for (i, idx) in enumerate(selected_features)
-#     savefig(histograms[i], "Entrega/plots/histogram_feature$(idx)")
-# end
-
-# # Save selected boxplots
-# for (i, idx) in enumerate(selected_features)
-#     savefig(boxplots[i], "Entrega/plots/boxplot_feature$(idx)")
-# end
 
 println("Analysis completed and results saved.")
