@@ -23,13 +23,11 @@ using CSV
 using DelimitedFiles
 Random.seed!(12345)
 
+data_path= "Entrega/optdigits.full"
+
 # ------------------------------------------------------------------
 # Critical Difference Diagram Implementation
 # ------------------------------------------------------------------
-using Plots
-using Statistics
-using StatsBase
-using Random
 
 function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true, title="", figsize=(800, 400))
     n_methods = length(methods)
@@ -450,6 +448,7 @@ cd_diagram = create_cd_diagram(
 println("Generando tablas de métricas para cada modelo...")
 
 # Directorio para guardar las tablas
+tables_dir = "Entrega/tables"
 mkpath(tables_dir)
 
 # Función para generar tabla LaTeX con resultados detallados
