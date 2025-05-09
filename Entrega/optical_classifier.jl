@@ -374,7 +374,7 @@ annotate!([(i, accuracies[i] + 0.002, text(string(round(accuracies[i] * 100, dig
 # ------------------------------------------------------------------
 # Confusion Matrix for the Best Model
 # ------------------------------------------------------------------
-#=
+
 println("Generating confusion matrix for the best model...")
 
 # Find the best overall model
@@ -495,7 +495,7 @@ cd_diagram = create_cd_diagram(
     title="ML Model Comparison",
     figsize=(900, 500)
 )
-=#
+
 # ------------------------------------------------------------------
 # Generación de tablas detalladas con métricas
 # ------------------------------------------------------------------
