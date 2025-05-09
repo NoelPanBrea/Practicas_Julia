@@ -1,4 +1,29 @@
 # ------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------
+
+using Pkg
+# Only uncomment if you need to install these packages
+# Pkg.add("DataFrames")
+# Pkg.add("Plots")
+# Pkg.add("StatsPlots")
+# Pkg.add("StatsBase")
+# Pkg.add("CSV")
+
+include("73166321D_54157616E_48118254T_54152126Y.jl")
+
+using DataFrames
+using Dates
+using Plots
+using StatsPlots
+using Random
+using StatsBase
+using Statistics
+using CSV
+using DelimitedFiles
+Random.seed!(12345)
+
+# ------------------------------------------------------------------
 # Critical Difference Diagram Implementation
 # ------------------------------------------------------------------
 using Plots
@@ -100,59 +125,14 @@ function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true,
 end
 
 # ------------------------------------------------------------------
-# Dependencies
+# Load Function
 # ------------------------------------------------------------------
-
-using Pkg
-# Only uncomment if you need to install these packages
-# Pkg.add("DataFrames")
-# Pkg.add("Plots")
-# Pkg.add("StatsPlots")
-# Pkg.add("StatsBase")
-# Pkg.add("CSV")
-
-include("73166321D_54157616E_48118254T_54152126Y.jl")
-
-using DataFrames
-using Dates
-using Plots
-using StatsPlots
-using Random
-using StatsBase
-using Statistics
-using CSV
-using DelimitedFiles
-Random.seed!(12345)
 
 function load_optdigits(filename)
     data = readdlm(filename, ',')
     inputs = convert(Matrix{Float32}, data[:, 1:64])
     targets = string.(convert(Vector{Int64}, data[:, 65]))
     return inputs, targets
-end
-
-function generate_cv_indices(filename, k)
-    dataset_file = filename
-    
-    try
-        println("Loading dataset from: ", dataset_file)
-        inputs, targets = load_optdigits(dataset_file)
-        
-        println("Generating indices for $k-fold cross validation...")
-        
-        cv_indices = crossvalidation(targets, k)
-        
-        test_indices = findall(x -> x == 1, cv_indices)
-        
-        indices_file = "Entrega/cv_indices.txt"
-        writedlm(indices_file, test_indices)
-        
-        return test_indices
-        
-    catch e
-        println("Error during index generation: ", e)
-        error("Failed to generate cross-validation indices")
-    end
 end
 
 # ------------------------------------------------------------------
