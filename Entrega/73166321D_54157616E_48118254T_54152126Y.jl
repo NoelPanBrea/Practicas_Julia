@@ -714,7 +714,7 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
         push!(vector_valor_predictivo_positivo, mean(fold_valor_predictivo_positivo));
         push!(vector_valor_predictivo_negativo, mean(fold_valor_predictivo_negativo));
         push!(vector_f1, mean(fold_f1));
-        mat = mat + fold_mat;
+        mat += mat + fold_mat;
     end;
     return ((mean(vector_precision), std(vector_precision)), (mean(vector_tasa_de_error), std(vector_tasa_de_error)),
     (mean(vector_sensibilidad), std(vector_sensibilidad)), (mean(vector_especificidad), std(vector_especificidad)),
