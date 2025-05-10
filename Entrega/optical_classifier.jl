@@ -23,13 +23,11 @@ using CSV
 using DelimitedFiles
 Random.seed!(12345)
 
+data_path= "Entrega/optdigits.full"
+
 # ------------------------------------------------------------------
 # Critical Difference Diagram Implementation
 # ------------------------------------------------------------------
-using Plots
-using Statistics
-using StatsBase
-using Random
 
 function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true, title="", figsize=(800, 400))
     n_methods = length(methods)
