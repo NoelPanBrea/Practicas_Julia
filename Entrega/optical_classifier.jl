@@ -346,7 +346,7 @@ for (modelType, result) in collect(pairs(best_configs))
     # Create heatmap for the confusion matrix
     println("Plotting confusion matrix for : $modelType $(result[1]) ")
     confusion_heatmap = heatmap(result[2][8], 
-                            title="Confusion Matrix for Best Model on Test Set",
+                            title="Confusion Matrix for $modelType",
                             xlabel="Predicted", ylabel="Actual",
                             xticks=(1:length(clases), clases), yticks=(1:length(clases), clases),
                             color=:blues,
@@ -356,7 +356,7 @@ for (modelType, result) in collect(pairs(best_configs))
     for i in 1:size(result[2][8], 1)
         for j in 1:size(result[2][8], 2)
             if result[2][8][i, j] > 0
-                annotate!([(j, i, text(string(Int(result[2][8][i, j])), 8, :white))])
+                annotate!([(j, i, text(string(Int(round(result[2][8][i, j]))), 8, :white))])
             end
         end
     end
@@ -386,7 +386,7 @@ for (j, (modelType, result)) in enumerate(collect(pairs(best_configs)))
                 maxEpochs=1000,
                 learningRate=0.01
             )
-            test_outputs = accuracy(model(Float32.(test_inputs_fold'))', test_targets_fold)
+            test_outputs = accuracy(model(Float32.(test_inputs_fold'))', oneHotEncoding(test_targets_fold))
         elseif modelType == :DoME
             # Special case for DoME
             test_outputs = trainClassDoME(

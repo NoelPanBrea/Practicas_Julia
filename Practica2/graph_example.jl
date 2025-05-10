@@ -111,30 +111,36 @@ function create_cd_diagram(methods, performances; α=0.05, lower_is_better=true,
 end
 
 # Ejemplo de uso con 5 métodos
-methods = ["Método A", "Método B", "Método C", "Método D", "Método E"]
+methods = ["DTC", "SVC", "DoME", "KNN", "ANN"]
 
 # Matriz de rendimiento simulada para 10 datasets (filas) y 5 métodos (columnas)
 # Podría ser error, exactitud, F1-score, etc.
 # Aquí simulamos alguna métrica de error (menor es mejor)
 performances = [
-    0.15 0.21 0.19 0.25 0.22;
-    0.12 0.18 0.15 0.20 0.17;
-    0.19 0.15 0.22 0.18 0.20;
-    0.14 0.21 0.16 0.23 0.19;
-    0.16 0.19 0.18 0.22 0.20;
-    0.13 0.18 0.17 0.21 0.19;
+    0.7463 0.21 0.19 0.25 0.22;
+    0.7463 0.02 0.15 0.20 0.17;
+    0.19 0.10 0.22 0.18 0.20;
+    0.14 0.01 0.16 0.23 0.19;
+    0.16 0.01 0.18 0.22 0.20;
+    0.13 0.01 0.17 0.21 0.19;
     0.17 0.20 0.15 0.22 0.18;
     0.15 0.17 0.19 0.23 0.21;
     0.18 0.16 0.20 0.24 0.19;
-    0.16 0.19 0.17 0.21 0.18
+    0.2 0.01 0.17 0.21 0.18
 ]
-
+performances = zeros(k, length(best_configs))
+prec = [0.7463, 0.7928, 0.3364, 0.8893, 0.9605]
+for j in 1:5
+    for i in 1:5
+        performances[:, i] = fill(prec[i], 5)
+    end
+end
 # Crear el diagrama CD
 cd_diagram = create_cd_diagram(
     methods, 
     performances, 
     α=0.05, 
-    lower_is_better=true,  # Si tu métrica es error (menor es mejor)
+    lower_is_better=false,  # Si tu métrica es error (menor es mejor)
     title="Comparación de Métodos ML"
 )
 
