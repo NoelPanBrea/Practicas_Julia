@@ -52,9 +52,8 @@ end;
 
 function loadImagesNCHW(datasetFolder::String;
     datasetType::DataType=Float32, resolution::Int=128)
-    #
-    # Codigo a desarrollar
-    #
+   imageNames = fileNamesFolder(datasetFolder, ".tif");
+   convertImagesNCHW(loadImage.(imageNames, datasetFolder, datasetType, resolution));
 end;
 
 
