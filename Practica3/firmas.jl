@@ -64,9 +64,19 @@ showImage(imagesNCHW1::AbstractArray{<:Real,4}, imagesNCHW2::AbstractArray{<:Rea
 
 
 function loadMNISTDataset(datasetFolder::String; labels::AbstractArray{Int,1}=0:9, datasetType::DataType=Float32)
-    #
-    # Codigo a desarrollar
-    #
+    dataset = JLD2.load(joinpath(datasetFolder, "MNIST.jld2"));
+    test_targets, train_targets = dataset["test_labels"], dataset["train_labels"];
+    if  in(-1, labels)
+        train_targets[.!in.(train_targets, [setdiff(labels,-1)])] .= -1; 
+        test_targets[.!in.(test_targets, [setdiff(labels,-1)])] .= -1;
+    else
+        test_indices = in.(test_targets, [labels]);
+        train_indices = in.(train_targets, [labels]);
+        train_targets = train_targets[in.(train_targets, labels)]
+        test_targets = test_targets[in.(test_targets, labels)]
+    end;
+    return (convertImagesNCHW(dataset["train_imgs"][train_indices]), train_targets, convertImagesNCHW(dataset["test_imgs"][test_indices]), test_targets)
+
 end;
 
 
