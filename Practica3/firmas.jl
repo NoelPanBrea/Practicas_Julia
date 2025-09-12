@@ -26,9 +26,9 @@ function loadDataset(datasetName::String, datasetFolder::String;
         targets = convert(Array{Bool, 1}, targets .== classes[1]);
         return (inputs, targets);
     catch error
-        print("Error: $error")
-        return nothing
-    end
+        print("Error: $error");
+        return nothing;
+    end;
 end;
 
 
@@ -37,8 +37,8 @@ function loadImage(imageName::String, datasetFolder::String;
     image_file = imageName + ".tif";
     loaded_image = load(ImageFile);
     resize_image = imresize(image, (resolution,resolution));
-    gray_image = Gray{Float64}(resize_image)
-    matrix_image = 
+    gray_image = Gray{Float64}(resize_image);
+    matrix_image = [];
 end;
 
 
