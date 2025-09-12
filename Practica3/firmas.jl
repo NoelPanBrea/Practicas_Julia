@@ -10,11 +10,9 @@ using JLD2
 using Images
 
 function fileNamesFolder(folderName::String, extension::String)
-    #
-    # Codigo a desarrollar
-    #
+    extension = uppercase(extension);
+    fileNames = filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName));
 end;
-
 
 
 function loadDataset(datasetName::String, datasetFolder::String;
@@ -33,11 +31,14 @@ function loadDataset(datasetName::String, datasetFolder::String;
     end
 end;
 
+
 function loadImage(imageName::String, datasetFolder::String;
     datasetType::DataType=Float32, resolution::Int=128)
-    #
-    # Codigo a desarrollar
-    #
+    image_file = imageName + ".tif";
+    loaded_image = load(ImageFile);
+    resize_image = imresize(image, (resolution,resolution));
+    gray_image = Gray{Float64}(resize_image)
+    matrix_image = 
 end;
 
 
