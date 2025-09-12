@@ -19,12 +19,19 @@ end;
 
 function loadDataset(datasetName::String, datasetFolder::String;
     datasetType::DataType=Float32)
-    #
-    # Codigo a desarrollar
-    #
+    try
+        dataset = readdlm(joinpath(datasetFolder, datasetName), '\t');
+        target_column_index = findfirst(isequal("target"), dataset[1, 1:end]);
+        inputs = convert(Matrix{datasetType}, dataset[2:end, 1:end.!=target_column_index]);
+        targets = dataset[2:end, target_column_index];
+        classes = unique(targets);
+        targets = convert(Array{Bool, 1}, targets .== classes[1]);
+        return (inputs, targets);
+    catch error
+        print("Error: $error")
+        return nothing
+    end
 end;
-
-
 
 function loadImage(imageName::String, datasetFolder::String;
     datasetType::DataType=Float32, resolution::Int=128)
