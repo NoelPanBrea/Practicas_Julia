@@ -1,0 +1,2 @@
+MN* filter=lfs diff=lfs merge=lfs -text
+MNIST.jld2 filter=lfs diff=lfs merge=lfs -text
