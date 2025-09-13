@@ -10,16 +10,16 @@ using JLD2
 using Images
 
 function fileNamesFolder(folderName::String, extension::String)
-    extension = uppercase(extension);
-    fileNames = filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName));
-    return replace.(fileNames, extension => "");
+    up_extension = uppercase(extension);
+    fileNames = filter(f -> endswith(uppercase(f), ".$up_extension"), readdir(folderName));
+    return replace.(fileNames, ".$extension" => "");
 end;
 
 
 function loadDataset(datasetName::String, datasetFolder::String;
     datasetType::DataType=Float32)
     try
-        dataset = readdlm(joinpath(datasetFolder, datasetName), '\t');
+        dataset = readdlm(joinpath(datasetFolder, join([datasetName, ".tsv"])), '\t');
         target_column_index = findfirst(isequal("target"), dataset[1, 1:end]);
         inputs = convert(Matrix{datasetType}, dataset[2:end, 1:end.!=target_column_index]);
         targets = dataset[2:end, target_column_index];
@@ -58,8 +58,8 @@ end;
 
 function loadImagesNCHW(datasetFolder::String;
     datasetType::DataType=Float32, resolution::Int=128)
-   imageNames = fileNamesFolder(datasetFolder, ".tif");
-   convertImagesNCHW(loadImage.(imageNames, datasetFolder, datasetType, resolution));
+   imageNames = fileNamesFolder(datasetFolder, "tif");
+   convertImagesNCHW(loadImage.(imageNames, datasetFolder, datasetType = datasetType, resolution = resolution));
 end;
 
 
@@ -72,16 +72,17 @@ showImage(imagesNCHW1::AbstractArray{<:Real,4}, imagesNCHW2::AbstractArray{<:Rea
 function loadMNISTDataset(datasetFolder::String; labels::AbstractArray{Int,1}=0:9, datasetType::DataType=Float32)
     dataset = JLD2.load(joinpath(datasetFolder, "MNIST.jld2"));
     test_targets, train_targets = dataset["test_labels"], dataset["train_labels"];
+    train_images, test_images = dataset["train_imgs"], dataset["test_imgs"];
     if  in(-1, labels)
         train_targets[.!in.(train_targets, [setdiff(labels,-1)])] .= -1; 
         test_targets[.!in.(test_targets, [setdiff(labels,-1)])] .= -1;
     else
-        test_indices = in.(test_targets, [labels]);
-        train_indices = in.(train_targets, [labels]);
-        train_targets = train_targets[in.(train_targets, labels)]
-        test_targets = test_targets[in.(test_targets, labels)]
+        train_images = train_images[in.(train_targets, [labels])];
+        test_images = test_images[in.(test_targets, [labels])];
+        train_targets = train_targets[in.(train_targets, [labels])];
+        test_targets = test_targets[in.(test_targets, [labels])];
     end;
-    return (convertImagesNCHW(dataset["train_imgs"][train_indices]), train_targets, convertImagesNCHW(dataset["test_imgs"][test_indices]), test_targets)
+    return (convert(Array{datasetType}, convertImagesNCHW(train_images)), train_targets, convert(Array{datasetType}, convertImagesNCHW(test_images)), test_targets)
 
 end;
 
