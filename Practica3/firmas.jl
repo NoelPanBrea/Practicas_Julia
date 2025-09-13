@@ -12,6 +12,7 @@ using Images
 function fileNamesFolder(folderName::String, extension::String)
     extension = uppercase(extension);
     fileNames = filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName));
+    return replace.(fileNames, extension => "");
 end;
 
 
@@ -34,11 +35,15 @@ end;
 
 function loadImage(imageName::String, datasetFolder::String;
     datasetType::DataType=Float32, resolution::Int=128)
-    image_file = imageName + ".tif";
-    loaded_image = load(ImageFile);
-    resize_image = imresize(image, (resolution,resolution));
-    gray_image = Gray{Float64}(resize_image);
-    matrix_image = [];
+    try
+        imagePath = joinpath(datasetFolder, join([imageName, ".tif"]));
+        image = load(imagePath);
+        resized_image = imresize(image, (resolution, resolution));
+        return convert(Array{datasetType}, gray.(resized_image));
+    catch error
+        print("Error: $error")
+        return nothing
+    end;
 end;
 
 
