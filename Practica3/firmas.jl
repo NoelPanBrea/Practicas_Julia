@@ -10,9 +10,9 @@ using JLD2
 using Images
 
 function fileNamesFolder(folderName::String, extension::String)
-    up_extension = uppercase(extension);
-    fileNames = filter(f -> endswith(uppercase(f), ".$up_extension"), readdir(folderName));
-    return replace.(fileNames, ".$extension" => "");
+    extension = uppercase(extension);
+    fileNames = filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName));
+    return convert(Vector{String}, first.(split.(fileNames, ".")));
 end;
 
 
@@ -23,7 +23,7 @@ function loadDataset(datasetName::String, datasetFolder::String;
         target_column_index = findfirst(isequal("target"), dataset[1, 1:end]);
         inputs = convert(Matrix{datasetType}, dataset[2:end, 1:end.!=target_column_index]);
         targets = dataset[2:end, target_column_index];
-        classes = unique(targets);
+        classes = sort(unique(targets));
         targets = convert(Array{Bool, 1}, targets .== classes[1]);
         return (inputs, targets);
     catch error
@@ -59,6 +59,7 @@ end;
 function loadImagesNCHW(datasetFolder::String;
     datasetType::DataType=Float32, resolution::Int=128)
    imageNames = fileNamesFolder(datasetFolder, "tif");
+   print(imageNames)
    convertImagesNCHW(loadImage.(imageNames, datasetFolder, datasetType = datasetType, resolution = resolution));
 end;
 
@@ -101,9 +102,8 @@ end
 
 
 function cyclicalEncoding(data::AbstractArray{<:Real,1})
-    #
-    # Codigo a desarrollar
-    #
+    mindiff = intervalDiscreteVector(data);
+    
 end;
 
 
