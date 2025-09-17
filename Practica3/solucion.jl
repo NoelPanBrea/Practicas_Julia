@@ -15,7 +15,7 @@ using Images
 function fileNamesFolder(folderName::String, extension::String)
     isdir(folderName) || return String[]
     extU = uppercase(extension)
-    files = sort(filter(f -> endswith(uppercase(f), ".$extU"), readdir(folderName)))  # ← sort
+    files = sort(filter(f -> endswith(uppercase(f), ".$extU"), readdir(folderName)))
     return map(f -> first(splitext(f)), files)
 end
 
