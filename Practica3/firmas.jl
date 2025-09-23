@@ -247,10 +247,11 @@ function addClassCascadeNeuron(previousANN::Chain; transferFunction::Function=σ
     numOutputsOutputLayer = size(outputLayer.weight, 1);
     weight = outputLayer.weight;
     bias = outputLayer.bias;
+    newLayer = SkipConnection(Dense(numInputsOutputLayer, 1, transferFunction), (mx, x) -> vcat(x, mx))
     if numOutputsOutputLayer > 2
-        ann = Chain(previousLayers..., SkipConnection(Dense(numInputsOutputLayer, 1, transferFunction), (mx, x) -> vcat(x, mx)), Dense(numInputsOutputLayer + 1, numOutputsOutputLayer, identity), softmax);
+        ann = Chain(previousLayers..., newLayer, Dense(numInputsOutputLayer + 1, numOutputsOutputLayer, identity), softmax);
     else
-        ann = Chain(previousLayers..., SkipConnection(Dense(numInputsOutputLayer, 1, transferFunction), (mx, x) -> vcat(x, mx)), Dense(numInputsOutputLayer + 1, 1, σ));
+        ann = Chain(previousLayers..., newLayer, Dense(numInputsOutputLayer + 1, 1, σ));
     end;
     ann[indexOutputLayer(ann)].weight[:, 1:end - 1] = weight;
     ann[indexOutputLayer(ann)].weight[:, end] .= 0;
