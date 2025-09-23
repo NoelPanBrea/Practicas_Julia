@@ -222,9 +222,51 @@ end;
 
 function trainClassANN!(ann::Chain, trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}, trainOnly2LastLayers::Bool;
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.001, minLossChange::Real=1e-7, lossChangeWindowSize::Int=5)
-    #
-    # Codigo a desarrollar
-    #
+
+    # prepara el dataset
+    inputs = convert(AbstractArray{Float32,2}, trainingDataset[1]);
+    targets = trainingDataset[2];
+
+    # función loss dependiendo de si es salida binaria o multiclase
+    loss(model, x, y) = (size(y, 1) == 1) ?
+        Losses.binarycrossentropy(model(x), y) :
+        Losses.crossentropy(model(x), y);
+
+    # inicializa función loss en la iteracion 0 del bucle de entrenamiento
+    trainingLosses = Float32[loss(ann, inputs, targets)];
+
+    # optimizador
+    opt_state = Flux.setup(Adam(learningRate), ann);
+
+    # congela las dos últimas capas si es necesario
+    if trainOnly2LastLayers
+        Flux.freeze!(opt_state.layers[1:(length(ann)-2)]);
+    end;
+
+    # bucle de entrenamiento
+    for epoch in 1:maxEpochs
+        Flux.train!(loss, ann, [(inputs, targets)], opt_state);
+        current_loss = Float32(loss(ann, inputs, targets));
+        push!(trainingLosses, current_loss);
+
+        # primer criterio de parada
+        if current_loss <= minLoss
+            break;
+        end;
+
+        # segundo criterio de parada
+        if length(trainingLosses) >= lossChangeWindowSize + 1
+            lossWindow = trainingLosses[end - lossChangeWindowSize + 1:end];
+            minLossValue, maxLossValue = extrema(lossWindow);
+            if minLossValue > 0
+                if ((maxLossValue - minLossValue) / minLossValue) <= minLossChange
+                    break;
+                end;
+            end;
+        end;
+    end;
+
+    return trainingLosses
 end;
 
 
