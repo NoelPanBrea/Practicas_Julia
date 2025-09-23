@@ -9,27 +9,66 @@ using DelimitedFiles
 using JLD2
 using Images
 
+#No eliminar
+# function fileNamesFolder(folderName::String, extension::String)
+#     extension = uppercase(extension);
+#     fileNames = sort(filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName)));
+#     return convert(Vector{String}, first.(split.(fileNames, ".")));
+# end;
+
+
+# function loadDataset(datasetName::String, datasetFolder::String;
+#     datasetType::DataType=Float32)
+#     try
+#         dataset = readdlm(joinpath(datasetFolder, join([datasetName, ".tsv"])), '\t');
+#         target_column_index = findfirst(isequal("target"), dataset[1, 1:end]);
+#         inputs = convert(Matrix{datasetType}, dataset[2:end, 1:end.!=target_column_index]);
+#         targets = dataset[2:end, target_column_index];
+#         classes = sort(unique(targets));
+#         targets = convert(Array{Bool, 1}, targets .== classes[1]);
+#         return (inputs, targets);
+#     catch error
+#         print("Error: $error");
+#         return nothing;
+#     end;
+# end;
+
 function fileNamesFolder(folderName::String, extension::String)
-    extension = uppercase(extension);
-    fileNames = sort(filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName)));
-    return convert(Vector{String}, first.(split.(fileNames, ".")));
-end;
+    isdir(folderName) || return String[]
+    extU = uppercase(extension)
+    files = sort(filter(f -> endswith(uppercase(f), ".$extU"), readdir(folderName)))
+    return map(f -> first(splitext(f)), files)
+end
 
 
 function loadDataset(datasetName::String, datasetFolder::String;
     datasetType::DataType=Float32)
-    try
-        dataset = readdlm(joinpath(datasetFolder, join([datasetName, ".tsv"])), '\t');
-        target_column_index = findfirst(isequal("target"), dataset[1, 1:end]);
-        inputs = convert(Matrix{datasetType}, dataset[2:end, 1:end.!=target_column_index]);
-        targets = dataset[2:end, target_column_index];
-        classes = sort(unique(targets));
-        targets = convert(Array{Bool, 1}, targets .== classes[1]);
-        return (inputs, targets);
-    catch error
-        print("Error: $error");
-        return nothing;
-    end;
+    fname = datasetName * ".tsv"
+    fpath = abspath(joinpath(datasetFolder, fname))
+    isfile(fpath) || return nothing
+
+    M = readdlm(fpath, '\t', Any)
+
+    headers = String.(M[1, :])      # cabeceras
+    data    = M[2:end, :]           # datos
+
+    tgt_idx = findfirst(==("target"), headers)
+    tgt_idx === nothing && return nothing
+
+    incols = setdiff(1:size(M,2), [tgt_idx])
+    X_any  = data[:, incols]
+    y_any  = vec(data[:, tgt_idx])
+
+    # convertir entradas a floats
+    toFloat(x) = x isa Number ? float(x) : parse(Float64, string(x))
+    X = convert.(datasetType, toFloat.(X_any))
+
+    # convertir target a Bool (soporta 0/1 y varios textos)
+    toBool(x) = x isa Number ? (x == 1) :
+                (lowercase(strip(string(x))) in ("1","true","t","yes","y","up"))
+    y = map(toBool, y_any)
+
+    return (X, y)
 end;
 
 
