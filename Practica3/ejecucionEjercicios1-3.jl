@@ -3,7 +3,7 @@
 # Archivo de pruebas para realizar autoevaluación de algunas funciones de los ejercicios
 
 # Importamos el archivo con las soluciones a los ejercicios
-include("solucion.jl");
+include("firmas.jl");
 #   Cambiar "soluciones.jl" por el nombre del archivo que contenga las funciones desarrolladas
 
 
@@ -118,6 +118,7 @@ seed!(1); ann = newClassCascadeNetwork(size(inputs,2), 1)
 
 
 seed!(1); newAnn = addClassCascadeNeuron(ann; transferFunction=tanh)
+print(length(newAnn))
 @assert(length(newAnn)==2)
 @assert(isa( newAnn[1], SkipConnection))
 @assert(isa( newAnn[1].layers, Dense))

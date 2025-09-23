@@ -11,7 +11,7 @@ using Images
 
 function fileNamesFolder(folderName::String, extension::String)
     extension = uppercase(extension);
-    fileNames = filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName));
+    fileNames = sort(filter(f -> endswith(uppercase(f), ".$extension"), readdir(folderName)));
     return convert(Vector{String}, first.(split.(fileNames, ".")));
 end;
 
@@ -102,16 +102,83 @@ end
 
 
 function cyclicalEncoding(data::AbstractArray{<:Real,1})
-    mindiff = intervalDiscreteVector(data);
-    
+    # 1) vector vacío → devolvemos vectores vacíos
+    isempty(data) && return (Float64[], Float64[])
+
+    # 2) si todos los valores son iguales, evitamos llamar a intervalDiscreteVector
+    xmin, xmax = extrema(data)
+    if xmin == xmax
+        n = length(data)
+        return (zeros(n), ones(n))   # ángulo 0 → sin=0, cos=1
+    end
+
+    # 3) caso normal: usamos intervalDiscreteVector como pide el enunciado
+    m = intervalDiscreteVector(data)   # 0 si continuo; >0 si discreto
+    denom = (xmax - xmin) + m          # siempre >0 aquí porque xmin!=xmax
+
+    angles = ((data .- xmin) ./ denom) .* (2pi)
+    return (sin.(angles), cos.(angles))
 end;
 
 
-
 function loadStreamLearningDataset(datasetFolder::String; datasetType::DataType=Float32)
-    #
-    # Codigo a desarrollar
-    #
+    fX = abspath(joinpath(datasetFolder, "elec2_data.dat"))
+    fy = abspath(joinpath(datasetFolder, "elec2_label.dat"))
+    (isfile(fX) && isfile(fy)) || return nothing
+
+    # ── leer X con autodetección de separador (tab -> espacio -> coma)
+    Xraw = readdlm(fX, '\t', Any; comments=false)
+    if size(Xraw,2) == 1
+        Xraw = readdlm(fX, ' ', Any; comments=false)
+        if size(Xraw,2) == 1
+            Xraw = readdlm(fX, ',', Any; comments=false)
+        end
+    end
+
+    # ── leer y con la misma lógica
+    yraw = readdlm(fy, '\t', Any; comments=false)
+    if size(yraw,2) > 1
+        # si viniera en varias columnas, lo aplanamos
+        yraw = vec(yraw[:,1])
+    else
+        yraw = vec(yraw)
+        if length(yraw) == 1
+            # por si quedó todo en una “celda” gigante (raro), último intento:
+            yraw = vec(readdlm(fy, ' ', Any; comments=false))
+            if length(yraw) == 1
+                yraw = vec(readdlm(fy, ',', Any; comments=false))
+            end
+        end
+    end
+
+    # Esperamos 8 columnas: date, day, period, nswprice, nswdemand, vicprice, vicdemand, transfer
+    if size(Xraw,2) < 8
+        error("Elec2: esperaba 8 columnas en elec2_data.dat, obtuve $(size(Xraw)). Revisa el separador/archivo.")
+    end
+
+    # Quitamos 1 (date) y 4 (nswprice) → quedan 6: day, period, nswdemand, vicprice, vicdemand, transfer
+    keep = setdiff(1:size(Xraw,2), [1,4])
+    Xkeep_any = Xraw[:, keep]
+
+    # day → sin/cos con cyclicalEncoding
+    toFloat(x) = x isa Number ? float(x) : parse(Float64, string(x))
+    day_real = toFloat.(Xkeep_any[:, 1])
+    s, c = cyclicalEncoding(day_real)
+
+    # Resto: period, nswdemand, vicprice, vicdemand, transfer
+    Xrest = convert.(datasetType, toFloat.(Xkeep_any[:, 2:end]))
+
+    # Ensamblar en orden requerido: sin, cos, period, nswdemand, vicprice, vicdemand, transfer
+    X = hcat(convert.(datasetType, s),
+             convert.(datasetType, c),
+             Xrest)
+
+    # Etiquetas Bool (acepta 1/0 y UP/DOWN, etc.)
+    toBool(x) = x isa Number ? (x == 1) :
+                (lowercase(strip(string(x))) in ("1","true","t","yes","y","up"))
+    y = map(toBool, yraw)
+
+    return (X, y)
 end;
 
 
@@ -125,15 +192,32 @@ using Flux
 indexOutputLayer(ann::Chain) = length(ann) - (ann[end]==softmax);
 
 function newClassCascadeNetwork(numInputs::Int, numOutputs::Int)
-    #
-    # Codigo a desarrollar
-    #
+    ann = Chain();
+    if numOutputs > 2
+        ann = Chain(ann..., Dense(numInputs, numOutputs, identity), softmax);
+    else
+        ann = Chain(ann..., Dense(numInputs, 1, σ));
+    end;
+    return ann;
 end;
 
 function addClassCascadeNeuron(previousANN::Chain; transferFunction::Function=σ)
-    #
-    # Codigo a desarrollar
-    #
+    outputLayer = previousANN[indexOutputLayer(previousANN)];
+    previousLayers = previousANN[1:(indexOutputLayer(previousANN)-1)];
+    numInputsOutputLayer  = size(outputLayer.weight, 2);
+    numOutputsOutputLayer = size(outputLayer.weight, 1);
+    weight = outputLayer.weight;
+    bias = outputLayer.bias;
+    if numOutputsOutputLayer > 2
+        ann = Chain(previousLayers..., SkipConnection(Dense(numInputsOutputLayer, 1, transferFunction), (mx, x) -> vcat(x, mx)), Dense(numInputsOutputLayer + 1, numOutputsOutputLayer, identity), softmax);
+    else
+        ann = Chain(previousLayers..., SkipConnection(Dense(numInputsOutputLayer, 1, transferFunction), (mx, x) -> vcat(x, mx)), Dense(numInputsOutputLayer + 1, 1, σ));
+    end;
+    ann[indexOutputLayer(ann)].weight[:, 1:end - 1] = weight;
+    ann[indexOutputLayer(ann)].weight[:, end] .= 0;
+    ann[indexOutputLayer(ann)].bias .= bias;
+
+    return ann;
 end;
 
 function trainClassANN!(ann::Chain, trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}, trainOnly2LastLayers::Bool;
