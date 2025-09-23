@@ -269,8 +269,8 @@ function trainClassANN!(ann::Chain, trainingDataset::Tuple{AbstractArray{<:Real,
 
     # función loss dependiendo de si es salida binaria o multiclase
     loss(model, x, y) = (size(y, 1) == 1) ?
-        Losses.binarycrossentropy(model(x), y) :
-        Losses.crossentropy(model(x), y);
+        Flux.Losses.binarycrossentropy(model(x), y) :
+        Flux.Losses.crossentropy(model(x), y);
 
     # inicializa función loss en la iteracion 0 del bucle de entrenamiento
     trainingLosses = Float32[loss(ann, inputs, targets)];
