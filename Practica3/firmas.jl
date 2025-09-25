@@ -314,18 +314,69 @@ function trainClassCascadeANN(maxNumNeurons::Int,
     trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}};
     transferFunction::Function=σ,
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.001, minLossChange::Real=1e-7, lossChangeWindowSize::Int=5)
-    #
-    # Codigo a desarrollar
-    #
+    
+    
+    inputs, outputs = trainingDataset
+    inputs = convert(Array{Float32}, inputs')
+    outputs = convert(Array{Bool}, outputs') 
+
+    ann = newClassCascadeNetwork(size(inputs, 1), size(outputs, 1))
+
+    loss = trainClassANN!(ann, (inputs, outputs),
+        false;  
+        maxEpochs = maxEpochs, 
+        minLoss = minLoss, 
+        learningRate = learningRate, 
+        minLossChange = minLossChange, 
+        lossChangeWindowSize = lossChangeWindowSize)
+    
+    #añadimos neuronas una a una
+    for i in 1:maxNumNeurons
+        ann = addClassCascadeNeuron(ann; transferFunction = transferFunction)
+        
+        #entrenar con conexiones congeladas
+        if i > 1
+            loss_2 = trainClassANN!(ann, (inputs, outputs),
+                true;
+                maxEpochs = maxEpochs, 
+                minLoss = minLoss, 
+                learningRate = learningRate, 
+                minLossChange = minLossChange, 
+                lossChangeWindowSize = lossChangeWindowSize)
+
+            loss = append!(loss, loss_2[2:end])
+        end
+
+        #entrenar la red entera
+        loss_2 = trainClassANN!(ann, (inputs, outputs),
+            false;
+            maxEpochs = maxEpochs, 
+            minLoss = minLoss, 
+            learningRate = learningRate, 
+            minLossChange = minLossChange, 
+            lossChangeWindowSize = lossChangeWindowSize)
+
+        loss = append!(loss, loss_2[2:end])
+    end
+    return ann, loss
 end;
 
 function trainClassCascadeANN(maxNumNeurons::Int,
     trainingDataset::  Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};
     transferFunction::Function=σ,
     maxEpochs::Int=100, minLoss::Real=0.0, learningRate::Real=0.01, minLossChange::Real=1e-7, lossChangeWindowSize::Int=5)
-    #
-    # Codigo a desarrollar
-    #
+    
+    #Función análoga a la anterior pero en lugar de recibir una matriz de salidas, recibe un vector de salidas
+    inputs, outputs_vec = trainingDataset
+    outputs_mat = reshape(outputs_vec, :, 1)
+
+    return trainClassCascadeANN(maxNumNeurons, (inputs, outputs_mat); 
+        transferFunction = transferFunction, 
+        maxEpochs = maxEpochs, 
+        minLoss = minLoss, 
+        learningRate = learningRate, 
+        minLossChange = minLossChange, 
+        lossChangeWindowSize = lossChangeWindowSize)
 end;
     
 
@@ -338,37 +389,41 @@ using Random
 HopfieldNet = Array{Float32,2}
 
 function trainHopfield(trainingSet::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    N, m = size(trainingSet)
+    W = (trainingSet' * trainingSet) ./ N          
+    # poner diagonal a 0
+    for i in 1:m
+        W[i,i] = 0
+    end
+    return HopfieldNet(W)
 end;
 function trainHopfield(trainingSet::AbstractArray{<:Bool,2})
-    #
-    # Codigo a desarrollar
-    #
+    S = (2 .* trainingSet) .- 1
+    return trainHopfield(S)
 end;
 function trainHopfield(trainingSetNCHW::AbstractArray{<:Bool,4})
-    #
-    # Codigo a desarrollar
-    #
+    N = size(trainingSetNCHW, 1) #numero de patrones
+    m = prod(size(trainingSetNCHW)) ÷ N
+    S = reshape(trainingSetNCHW, N, m) #reordenar a matriz Nxm
+    return trainHopfield(S)
 end;
 
 function stepHopfield(ann::HopfieldNet, S::AbstractArray{<:Real,1})
-    #
-    # Codigo a desarrollar
-    #
+    x = Float32.(S)
+    y = ann * x #calcular activación
+    return sign.(y) .|> Float32 #aplicamos signo
 end;
 function stepHopfield(ann::HopfieldNet, S::AbstractArray{<:Bool,1})
-    #
-    # Codigo a desarrollar
-    #
+    S_real = (2 .* S) .- 1
+    y = stepHopfield(ann, S_real)
+    return y .>= 0 #devolvemos como booleano
 end;
 
 
 function runHopfield(ann::HopfieldNet, S::AbstractArray{<:Real,1})
-    prev_S = nothing;
-    prev_prev_S = nothing;
-    while S!=prev_S && S!=prev_prev_S
+    prev_S = nothing;  
+    prev_prev_S = nothing; 
+    while S!=prev_S && S!=prev_prev_S 
         prev_prev_S = prev_S;
         prev_S = S;
         S = stepHopfield(ann, S);
@@ -387,26 +442,29 @@ function runHopfield(ann::HopfieldNet, datasetNCHW::AbstractArray{<:Real,4})
     return reshape(outputs, size(datasetNCHW,1), 1, size(datasetNCHW,3), size(datasetNCHW,4));
 end;
 
-
-
-
-
 function addNoise(datasetNCHW::AbstractArray{<:Bool,4}, ratioNoise::Real)
-    #
-    # Codigo a desarrollar
-    #
+    noiseSet = copy(datasetNCHW)
+    numPixels = length(noiseSet) #total valores
+    numNoisy  = Int(round(numPixels * ratioNoise)) #cuantos invertimos
+    if numNoisy > 0
+        indices = randperm(numPixels)[1:numNoisy]
+        noiseSet[indices] .= .!noiseSet[indices]  # invertir valores
+    end
+    return noiseSet
 end;
 
 function cropImages(datasetNCHW::AbstractArray{<:Bool,4}, ratioCrop::Real)
-    #
-    # Codigo a desarrollar
-    #
+    croppedSet = copy(datasetNCHW)
+    N, C, H, W = size(croppedSet) #dimension dataset
+    colsToRemove = ceil(Int, W * ratioCrop) #columnas a eliminar
+    if colsToRemove > 0
+        croppedSet[:,:,:,end-colsToRemove+1:end] .= false
+    end
+    return croppedSet
 end;
 
 function randomImages(numImages::Int, resolution::Int)
-    #
-    # Codigo a desarrollar
-    #
+    return randn(numImages, 1, resolution, resolution) .>= 0
 end;
 
 function averageMNISTImages(imageArray::AbstractArray{<:Real,4}, labelArray::AbstractArray{Int,1})
