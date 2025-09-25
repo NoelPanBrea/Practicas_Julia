@@ -296,7 +296,7 @@ function trainClassANN!(ann::Chain, trainingDataset::Tuple{AbstractArray{<:Real,
 
         # segundo criterio de parada
         if length(trainingLosses) >= lossChangeWindowSize
-            lossWindow = trainingLosses[end - lossChangeWindowSize:end];
+            lossWindow = trainingLosses[end - lossChangeWindowSize + 1:end];
             minLossValue, maxLossValue = extrema(lossWindow);
             if minLossValue > 0
                 if ((maxLossValue - minLossValue) / minLossValue) <= minLossChange
