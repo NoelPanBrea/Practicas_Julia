@@ -468,15 +468,29 @@ function randomImages(numImages::Int, resolution::Int)
 end;
 
 function averageMNISTImages(imageArray::AbstractArray{<:Real,4}, labelArray::AbstractArray{Int,1})
-    #
-    # Codigo a desarrollar
-    #
+    labels = unique(labelArray)
+    N = length(labels)
+    C, H, W = size(imageArray, 2), size(imageArray, 3), size(imageArray, 4)
+
+    uniqueImageArray = similar(imageArray, eltype(imageArray), (N, C, H, W)) # creamos la matriz de salida en formato NCHW
+
+    for indexLabel in 1:N
+        uniqueImageArray[indexLabel, 1, :, :] .= dropdims(mean(imageArray[labelArray.==labels[indexLabel], 1, :, :], dims=1), dims=1)
+    end
+
+    return (uniqueImageArray, labels)
 end;
 
 function classifyMNISTImages(imageArray::AbstractArray{<:Bool,4}, templateInputs::AbstractArray{<:Bool,4}, templateLabels::AbstractArray{Int,1})
-    #
-    # Codigo a desarrollar
-    #
+    outputs = fill(-1, size(imageArray, 1))
+
+    for i in 1:length(templateLabels)
+        template = templateInputs[[i], :, :, :]
+        indicesCoincidence = vec(all(imageArray .== template, dims=[3,4]))   
+        outputs[indicesCoincidence] .= templateLabels[i]
+    end
+
+    return outputs
 end;
 
 function calculateMNISTAccuracies(datasetFolder::String, labels::AbstractArray{Int,1}, threshold::Real)
