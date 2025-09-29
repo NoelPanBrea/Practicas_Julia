@@ -494,16 +494,16 @@ function classifyMNISTImages(imageArray::AbstractArray{<:Bool,4}, templateInputs
 end;
 
 function calculateMNISTAccuracies(datasetFolder::String, labels::AbstractArray{Int,1}, threshold::Real)
-    dataset = loadMNISTDataset(datasetFolder, labels, Float32);
+    dataset = loadMNISTDataset(datasetFolder, labels = labels);
     templateArray, templateLabels = averageMNISTImages(dataset[1], dataset[2]);
     trainImages = dataset[1] .>= threshold;
     testImages = dataset[3] .>= threshold;
     templateArray = templateArray .>= threshold;
     trainedNet = trainHopfield(templateArray);
     resultMatrix = runHopfield(trainedNet, trainImages);
-    booltrainVector = solVector .== classifyMNISTImages(resultMatrix, templateArray, templateLabels);
+    booltrainVector = dataset[2] .== classifyMNISTImages(resultMatrix, templateArray, templateLabels);
     resultMatrix = runHopfield(trainedNet, testImages);
-    booltestVector = solVector .== classifyMNISTImages(resultMatrix, templateArray, dataset[4]);
+    booltestVector = dataset[4] .== classifyMNISTImages(resultMatrix, templateArray, templateLabels);
     return (count(booltrainVector) / length(booltrainVector), count(booltestVector) / length(booltestVector))
 
 end;
