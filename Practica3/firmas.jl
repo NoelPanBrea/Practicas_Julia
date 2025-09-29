@@ -472,13 +472,13 @@ function averageMNISTImages(imageArray::AbstractArray{<:Real,4}, labelArray::Abs
     N = length(labels)
     C, H, W = size(imageArray, 2), size(imageArray, 3), size(imageArray, 4)
 
-    uniqueImageArray = similar(imageArray, eltype(imageArray), (N, C, H, W)) # creamos la matriz de salida en formato NCHW
+    templateArray = similar(imageArray, eltype(imageArray), (N, C, H, W)) # creamos la matriz de salida en formato NCHW
 
     for indexLabel in 1:N
-        uniqueImageArray[indexLabel, 1, :, :] .= dropdims(mean(imageArray[labelArray.==labels[indexLabel], 1, :, :], dims=1), dims=1)
+        templateArray[indexLabel, 1, :, :] .= dropdims(mean(imageArray[labelArray.==labels[indexLabel], 1, :, :], dims=1), dims=1)
     end
 
-    return (uniqueImageArray, labels)
+    return (templateArray, labels)
 end;
 
 function classifyMNISTImages(imageArray::AbstractArray{<:Bool,4}, templateInputs::AbstractArray{<:Bool,4}, templateLabels::AbstractArray{Int,1})
@@ -494,9 +494,18 @@ function classifyMNISTImages(imageArray::AbstractArray{<:Bool,4}, templateInputs
 end;
 
 function calculateMNISTAccuracies(datasetFolder::String, labels::AbstractArray{Int,1}, threshold::Real)
-    #
-    # Codigo a desarrollar
-    #
+    dataset = loadMNISTDataset(datasetFolder, labels, Float32);
+    templateArray, templateLabels = averageMNISTImages(dataset[1], dataset[2]);
+    trainImages = dataset[1] .>= threshold;
+    testImages = dataset[3] .>= threshold;
+    templateArray = templateArray .>= threshold;
+    trainedNet = trainHopfield(templateArray);
+    resultMatrix = runHopfield(trainedNet, trainImages);
+    booltrainVector = solVector .== classifyMNISTImages(resultMatrix, templateArray, templateLabels);
+    resultMatrix = runHopfield(trainedNet, testImages);
+    booltestVector = solVector .== classifyMNISTImages(resultMatrix, templateArray, dataset[4]);
+    return (count(booltrainVector) / length(booltrainVector), count(booltestVector) / length(booltestVector))
+
 end;
 
 
