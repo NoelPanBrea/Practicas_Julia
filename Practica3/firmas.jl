@@ -531,40 +531,31 @@ Batch = Tuple{AbstractArray{<:Real,2}, AbstractArray{<:Any,1}}
 
 
 function batchInputs(batch::Batch)
-    #
-    # Codigo a desarrollar
-    #
+    return batch[1]
 end;
+
 
 function batchTargets(batch::Batch)
-    #
-    # Codigo a desarrollar
-    #
+    return batch[2]
 end;
 
+
 function batchLength(batch::Batch)
-    #
-    # Codigo a desarrollar
-    #
+    return size(batch[1], 1)
 end;
 
 function selectInstances(batch::Batch, indices::Any)
-    #
-    # Codigo a desarrollar
-    #
+    return (batch[1][indices, :], batch[2][indices])
 end;
 
 function joinBatches(batch1::Batch, batch2::Batch)
-    #
-    # Codigo a desarrollar
-    #
+    return (vcat(batch1[1], batch2[1]), vcat(batch1[2], batch2[2]))
 end;
 
 
 function divideBatches(dataset::Batch, batchSize::Int; shuffleRows::Bool=false)
-    #
-    # Codigo a desarrollar
-    #
+    N = size(dataset[1], 1)
+    [ selectInstances(dataset, s:min(s+batchSize-1, N)) for s in 1:batchSize:N ]
 end;
 
 function trainSVM(dataset::Batch, kernel::String, C::Real;
