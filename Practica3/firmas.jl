@@ -568,9 +568,12 @@ end;
 
 function trainSVM(batches::AbstractArray{<:Batch,1}, kernel::String, C::Real;
     degree::Real=1, gamma::Real=2, coef0::Real=0.)
-    #
-    # Codigo a desarrollar
-    #
+    svmBatch = (Array{eltype(batches[1][1]),2}(undef,0,size(batches[1][1],2)), Array{eltype(batches[1][2]),1}(undef,0) )
+    model = 0
+    for batch in batches
+        model, _, svmBatch = trainSVM(batch, kernel, C, degree = degree, gamma = gamma, coef0 = coef0, supportVectors = svmBatch)
+    end;
+    return model;
 end;
 
 
