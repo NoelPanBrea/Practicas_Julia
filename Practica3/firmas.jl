@@ -600,15 +600,29 @@ end;
 
 
 function initializeStreamLearningData(datasetFolder::String, windowSize::Int, batchSize::Int)
-    #
-    # Codigo a desarrollar
-    #
+    full_dataset = loadStreamLearningDataset(datasetFolder)
+    memory = selectInstances(full_dataset, 1:windowSize)
+    rest = selectInstances(full_dataset, (windowSize+1):size(full_dataset[1], 2))
+    batches = divideBatches(rest, batchSize; shuffleRows=false)
+    return memory, batches
 end;
 
 function addBatch!(memory::Batch, newBatch::Batch)
-    #
-    # Codigo a desarrollar
-    #
+    memory_inputs, memory_targets = memory
+    new_inputs, new_targets = newBatch
+
+    len_new_instances = size(new_inputs, 2)         
+    len_memory = size(memory_inputs, 2)           
+
+    # desplaza la memoria, es decir, quita primeras instancias
+    memory_inputs[:, 1:(len_memory-len_new_instances)] .= memory_inputs[:, (len_new_instances+1):len_memory]
+    memory_targets[:, 1:(len_memory-len_new_instances)] .= memory_targets[:, (len_new_instances+1):len_memory]
+
+    # copia nuevos datos al final
+    memory_inputs[:, (len_memory-len_new_instances+1):len_memory] .= new_inputs
+    memory_targets[:, (len_memory-len_new_instances+1):len_memory] .= new_targets
+
+    return nothing   # no devuelve nada porque solo modifica la variable memory
 end;
 
 function streamLearning_SVM(datasetFolder::String, windowSize::Int, batchSize::Int, kernel::String, C::Real;
