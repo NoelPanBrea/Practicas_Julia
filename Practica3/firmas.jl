@@ -627,9 +627,24 @@ end;
 
 function streamLearning_SVM(datasetFolder::String, windowSize::Int, batchSize::Int, kernel::String, C::Real;
     degree::Real=1, gamma::Real=2, coef0::Real=0.)
-    #
-    # Codigo a desarrollar
-    #
+
+    memory, batches = initializeStreamLearningData(datasetFolder, windowSize, batchSize)
+    model = trainSVM(memory, kernel, C; degree=degree, gamma=gamma, coef0=coef0)
+    accuracies = Float64[]
+
+    for batch in batches
+        inputs_batch, targets_batch = batch
+
+        y_predicted = predict(model, inputs_batch)
+        accuracy = mean(y_predicted .== targets_batch)
+        push!(accuracies, accuracy)
+
+        addBatch!(memory, batch)
+
+        model = trainSVM(memory, kernel, C; degree=degree, gamma=gamma, coef0=coef0)
+    end
+
+    return accuracies
 end;
 
 function streamLearning_ISVM(datasetFolder::String, windowSize::Int, batchSize::Int, kernel::String, C::Real;
