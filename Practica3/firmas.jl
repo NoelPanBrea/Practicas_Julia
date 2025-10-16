@@ -554,8 +554,12 @@ end;
 
 
 function divideBatches(dataset::Batch, batchSize::Int; shuffleRows::Bool=false)
-    N = size(dataset[1], 1)
-    [ selectInstances(dataset, s:min(s+batchSize-1, N)) for s in 1:batchSize:N ]
+    inputs, targets = dataset
+    N = size(inputs, 1)
+
+    indices = shuffleRows ? randperm(N) : collect(1:N)
+    batches = [indices[i:min(i+batchSize-1, N)] for i in 1:batchSize:N]
+    return [selectInstances(dataset, b) for b in batches]
 end;
 
 function trainSVM(dataset::Batch, kernel::String, C::Real;
