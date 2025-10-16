@@ -659,33 +659,40 @@ function streamLearning_ISVM(datasetFolder::String, windowSize::Int, batchSize::
 end;
 
 function euclideanDistances(dataset::Batch, instance::AbstractArray{<:Real,1})
-    #
-    # Codigo a desarrollar
-    #
+    inputs = batchInputs(dataset)
+    diffs = inputs .- instance
+    return sqrt.(sum(diffs.^2, dims=2))
 end;
 
 function nearestElements(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int)
-    #
-    # Codigo a desarrollar
-    #
+    distances = euclideanDistances(dataset, instance)
+    idx = partialsortperm(distances, 1:k)
+    return selectInstances(dataset, idx)
 end;
 
 function predictKNN(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int)
-    #
-    # Codigo a desarrollar
-    #
+    nearestBatch = nearestElements(dataset, instance, k)
+    _, targets = nearestBatch
+    return mode(vec(targets))
 end;
 
 function predictKNN(dataset::Batch, instances::AbstractArray{<:Real,2}, k::Int)
-    #
-    # Codigo a desarrollar
-    #
+    return [predictKNN(dataset, x, k) for x in eachcol(instances)]
 end;
 
 function streamLearning_KNN(datasetFolder::String, windowSize::Int, batchSize::Int, k::Int)
-    #
-    # Codigo a desarrollar
-    #
+    memory, batches = initializeStreamLearningData(datasetFolder, windowSize, batchSize)
+    accuracies = Float64[]
+
+    for batch in batches
+        inputs_batch, targets_batch = batch
+        y_predicted = predictKNN(memory, inputs_batch, k)
+        accuracy = mean(y_predicted .== targets_batch)
+        push!(accuracies, accuracy)
+        addBatch!(memory, batch)
+    end
+
+    return accuracies
 end;
 
 
