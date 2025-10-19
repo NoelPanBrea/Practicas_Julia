@@ -571,7 +571,7 @@ function trainSVM(dataset::Batch, kernel::String, C::Real;
         gamma = Float64(gamma), degree = Int32(degree),
         coef0 = Float64(coef0))
     mach = machine(model, MLJ.table(batchInputs(joined_dataset)), categorical(batchTargets(joined_dataset)))
-    mach.fit!
+    fit!(mach)
     indicesNewSupportVectors = sort(mach.fitresult[1].SVs.indices)
 
     N = batchLength(supportVectors)
