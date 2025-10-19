@@ -704,9 +704,18 @@ end;
 
 
 function predictKNN_SVM(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int, C::Real)
-    #
-    # Codigo a desarrollar
-    #
+    inputs_knn, targets_knn = nearestElements(dataset, instance, k)
+    if length(unique(targets_knn)) == 1
+        return targets_knn[1]
+    end
+
+    svm = SVMClassifier(kernel = "linear", C = C)
+    # hacemos permutedims para que los inputs estén en filas y vec por si los targets son una matriz de una fila
+    mach = machine(svm, permutedims(inputs_knn), vec(targets_knn))
+    fit!(mach)
+    prediction = predict(mach, reshape(instance, 1, :))
+
+    return prediction[1]
 end;
 
 function predictKNN_SVM(dataset::Batch, instances::AbstractArray{<:Real,2}, k::Int, C::Real)
