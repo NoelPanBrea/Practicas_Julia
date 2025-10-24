@@ -660,8 +660,8 @@ end;
 
 function euclideanDistances(dataset::Batch, instance::AbstractArray{<:Real,1})
     inputs = batchInputs(dataset)
-    diffs = inputs .- instance
-    return sqrt.(sum(diffs.^2, dims=2))
+    diffs = inputs .- Ref(instance)
+    return sqrt.(sum(diffs.^2, dims=2))[:, 1]
 end;
 
 function nearestElements(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int)
@@ -671,13 +671,15 @@ function nearestElements(dataset::Batch, instance::AbstractArray{<:Real,1}, k::I
 end;
 
 function predictKNN(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int)
-    nearestBatch = nearestElements(dataset, instance, k)
-    _, targets = nearestBatch
-    return mode(vec(targets))
+    targets = batchTargets(dataset)
+    distances = euclideanDistances(dataset, instance)
+    k_indices = partialsortperm(distances, 1:k)
+    outputs = targets[k_indices]
+    return mode(outputs)
 end;
 
 function predictKNN(dataset::Batch, instances::AbstractArray{<:Real,2}, k::Int)
-    return [predictKNN(dataset, x, k) for x in eachcol(instances)]
+    return [predictKNN(dataset, instance, k) for instance in eachrow(instances)]
 end;
 
 function streamLearning_KNN(datasetFolder::String, windowSize::Int, batchSize::Int, k::Int)
@@ -719,8 +721,6 @@ function predictKNN_SVM(dataset::Batch, instance::AbstractArray{<:Real,1}, k::In
 end;
 
 function predictKNN_SVM(dataset::Batch, instances::AbstractArray{<:Real,2}, k::Int, C::Real)
-    #
-    # Codigo a desarrollar
-    #
+    return [predictKNN_SVM(dataset, instance, k, C) for instance in eachrow(instances)]
 end;
 
