@@ -571,7 +571,7 @@ function trainSVM(dataset::Batch, kernel::String, C::Real;
         gamma = Float64(gamma), degree = Int32(degree),
         coef0 = Float64(coef0))
     mach = machine(model, MLJ.table(batchInputs(joined_dataset)), categorical(batchTargets(joined_dataset)))
-    fit!(mach)
+    MLJ.fit!(mach)
     indicesNewSupportVectors = sort(mach.fitresult[1].SVs.indices)
 
     N = batchLength(supportVectors)
@@ -639,7 +639,7 @@ function streamLearning_SVM(datasetFolder::String, windowSize::Int, batchSize::I
     for batch in batches
         inputs_batch, targets_batch = batch
 
-        y_predicted = predict(model, inputs_batch)
+        y_predicted = MLJ.predict(model, inputs_batch)
         accuracy = mean(y_predicted .== targets_batch)
         push!(accuracies, accuracy)
 
@@ -712,7 +712,7 @@ function predictKNN_SVM(dataset::Batch, instance::AbstractArray{<:Real,1}, k::In
     svm = SVMClassifier(kernel = "linear", C = C)
     # hacemos permutedims para que los inputs estén en filas y vec por si los targets son una matriz de una fila
     mach = machine(svm, permutedims(inputs_knn), vec(targets_knn))
-    fit!(mach)
+    MLJ.fit!(mach)
     prediction = predict(mach, reshape(instance, 1, :))
 
     return prediction[1]
