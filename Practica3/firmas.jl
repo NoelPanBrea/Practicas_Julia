@@ -579,7 +579,7 @@ function trainSVM(dataset::Batch, kernel::String, C::Real;
     indicesDataset = findall(x -> x > N, indicesNewSupportVectors) .- N
 
     indicesJoined = joinBatches(indicesSupportVectors, indicesDataset)
-    NewSupportVectors = selectInstances(joined_batched, indicesJoined)
+    NewSupportVectors = selectInstances(joined_dataset, indicesJoined)
 
     return (mach, NewSupportVectors, (indicesSupportVectors, indicesDataset))
 
@@ -615,8 +615,8 @@ function addBatch!(memory::Batch, newBatch::Batch)
     memory_inputs, memory_targets = memory
     new_inputs, new_targets = newBatch
 
-    len_new_instances = size(new_inputs, 2)         
-    len_memory = size(memory_inputs, 2)           
+    len_new_instances = size(new_inputs, 1)         
+    len_memory = size(memory_inputs, 1)           
 
     # desplaza la memoria, es decir, quita primeras instancias
     memory_inputs[1:(len_memory-len_new_instances), :] .= memory_inputs[(len_new_instances+1):len_memory, :]
@@ -639,7 +639,7 @@ function streamLearning_SVM(datasetFolder::String, windowSize::Int, batchSize::I
     for batch in batches
         inputs_batch, targets_batch = batch
 
-        y_predicted = MLJ.predict(model, inputs_batch)
+        y_predicted = MLJ.predict(model[1], inputs_batch)  # solo nos interesa el primer elemento de la tupla "model", que es mach
         accuracy = mean(y_predicted .== targets_batch)
         push!(accuracies, accuracy)
 
@@ -660,7 +660,7 @@ end;
 
 function euclideanDistances(dataset::Batch, instance::AbstractArray{<:Real,1})
     inputs = batchInputs(dataset)
-    diffs = inputs .- Ref(instance)
+    diffs = inputs .- instance'      # trasponemos instance
     return sqrt.(sum(diffs.^2, dims=2))[:, 1]
 end;
 
@@ -671,8 +671,9 @@ function nearestElements(dataset::Batch, instance::AbstractArray{<:Real,1}, k::I
 end;
 
 function predictKNN(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int)
+    inputs = batchInputs(dataset)
     targets = batchTargets(dataset)
-    distances = euclideanDistances(dataset, instance)
+    distances = euclideanDistances(permutedims(inputs), instance')   # trasponemos instance
     k_indices = partialsortperm(distances, 1:k)
     outputs = targets[k_indices]
     return mode(outputs)
@@ -711,7 +712,7 @@ function predictKNN_SVM(dataset::Batch, instance::AbstractArray{<:Real,1}, k::In
         return targets_knn[1]
     end
 
-    svm = SVMClassifier(kernel = "linear", C = C)
+    svm = SVMClassifier(kernel = "linear", cost = Float64(C))
     # hacemos permutedims para que los inputs estén en filas y vec por si los targets son una matriz de una fila
     mach = machine(svm, permutedims(inputs_knn), vec(targets_knn))
     MLJ.fit!(mach)
