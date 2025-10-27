@@ -667,8 +667,7 @@ end;
 function streamLearning_ISVM(datasetFolder::String, windowSize::Int, batchSize::Int, kernel::String, C::Real;
     degree::Real=1, gamma::Real=2, coef0::Real=0.)
 
-    memory_init, batches = initializeStreamLearningData(datasetFolder, windowSize, batchSize)
-    firstBatch = memory_init
+    firstBatch, batches = initializeStreamLearningData(datasetFolder, batchSize, batchSize)
     
     if length(unique(batchTargets(firstBatch))) < 2
         error("El primer batch debe contener al menos dos clases diferentes")
@@ -690,7 +689,7 @@ function streamLearning_ISVM(datasetFolder::String, windowSize::Int, batchSize::
         targets = batchTargets(current)
         Nb      = batchLength(current)
 
-        predictions = MLJ.predict(model[1], inputs)
+        predictions = MLJ.predict(model, inputs)
         accuracy    = mean(predictions .== targets)
         push!(accuracies, accuracy)
 
@@ -730,7 +729,7 @@ function streamLearning_ISVM(datasetFolder::String, windowSize::Int, batchSize::
     end
 
     return accuracies
-end
+end;
 
 
 function euclideanDistances(dataset::Batch, instance::AbstractArray{<:Real,1})
