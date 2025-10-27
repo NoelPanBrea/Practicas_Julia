@@ -653,10 +653,72 @@ end;
 
 function streamLearning_ISVM(datasetFolder::String, windowSize::Int, batchSize::Int, kernel::String, C::Real;
     degree::Real=1, gamma::Real=2, coef0::Real=0.)
-    #
-    # Codigo a desarrollar
-    #
-end;
+
+    memory_init, batches = initializeStreamLearningData(datasetFolder, windowSize, batchSize)
+    firstBatch = memory_init
+    
+    if length(unique(batchTargets(firstBatch))) < 2
+        error("El primer batch debe contener al menos dos clases diferentes")
+    end
+
+    model, supportVectors, (supportIndex, indicesSupportVectorsInFirstBatch) =
+        trainSVM(firstBatch, kernel, C; degree=degree, gamma=gamma, coef0=coef0)
+    if model === nothing
+        error("No se pudo entrenar el modelo inicial")
+    end
+
+    ageVector   = collect(batchLength(firstBatch):-1:1)
+    supportAges = ageVector[indicesSupportVectorsInFirstBatch]
+
+    accuracies = Float64[]
+
+    for current in batches
+        inputs  = batchInputs(current)
+        targets = batchTargets(current)
+        Nb      = batchLength(current)
+
+        predictions = MLJ.predict(model[1], inputs)
+        accuracy    = mean(predictions .== targets)
+        push!(accuracies, accuracy)
+
+        if !isempty(supportAges)
+            supportAges .+= Nb
+        end
+
+        if !isempty(supportAges)
+            selected_indices = findall(x -> x <= windowSize, supportAges)
+            if isempty(selected_indices)
+                supportVectors = (zeros(eltype(inputs), 0, size(inputs,2)), Int[])
+                supportAges    = Int[]
+            else
+                supportVectors = selectInstances(supportVectors, selected_indices)
+                supportAges    = supportAges[selected_indices]
+            end
+        end
+
+        newModel, _, (newSupportIndex, newBatchIndex) =
+            trainSVM(current, kernel, C; degree=degree, gamma=gamma, coef0=coef0,
+                     supportVectors=supportVectors)
+
+        if newModel !== nothing
+            # Actualizar conjunto de SV
+            prevSel   = isempty(supportVectors[2]) ? supportVectors :
+                        selectInstances(supportVectors, newSupportIndex)
+            batchSel  = selectInstances(current, newBatchIndex)
+            supportVectors = joinBatches(prevSel, batchSel)
+
+            prevAgesSel     = isempty(supportAges) ? Int[] : supportAges[newSupportIndex]
+            newBatchAges    = collect(Nb:-1:1)
+            newSupportAges  = newBatchAges[newBatchIndex]
+            supportAges     = vcat(prevAgesSel, newSupportAges)
+
+            model = newModel
+        end
+    end
+
+    return accuracies
+end
+
 
 function euclideanDistances(dataset::Batch, instance::AbstractArray{<:Real,1})
     inputs = batchInputs(dataset)
@@ -673,7 +735,7 @@ end;
 function predictKNN(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int)
     inputs = batchInputs(dataset)
     targets = batchTargets(dataset)
-    distances = euclideanDistances(permutedims(inputs), instance')   # trasponemos instance
+    distances = euclideanDistances(permutedims(inputs), vec(instance))  
     k_indices = partialsortperm(distances, 1:k)
     outputs = targets[k_indices]
     return mode(outputs)
