@@ -564,36 +564,38 @@ end;
 function trainSVM(dataset::Batch, kernel::String, C::Real;
     degree::Real=1, gamma::Real=2, coef0::Real=0.,
     supportVectors::Batch=( Array{eltype(dataset[1]),2}(undef,0,size(dataset[1],2)) , Array{eltype(dataset[2]),1}(undef,0) ) )
-    joined_dataset = joinBatches(supportVectors, dataset)
+    training = joinBatches(supportVectors, dataset)
 
     k = kernel == "linear" ? LIBSVM.Kernel.Linear :
         kernel == "rbf"   ? LIBSVM.Kernel.RadialBasis :
         kernel == "poly"  ? LIBSVM.Kernel.Polynomial :
         kernel == "sigmoid" ? LIBSVM.Kernel.Sigmoid :
         error("Unknown kernel: $kernel")
-    
-    model = SVMClassifier(
-        kernel = k, cost = Float64(C),
-        gamma = Float64(gamma), degree = Int32(round(degree)),
-        coef0 = Float64(coef0))
-    mach = machine(model, MLJ.table(batchInputs(joined_dataset)), categorical(batchTargets(joined_dataset)))
+
+    model = SVMClassifier(kernel = k,
+                          cost = Float64(C),
+                          gamma = Float64(gamma),
+                          degree = Int32(round(degree)),
+                          coef0 = Float64(coef0))
+
+    mach = machine(model, MLJ.table(batchInputs(training)), categorical(batchTargets(training)))
     MLJ.fit!(mach)
+
     indicesNewSupportVectors = sort(mach.fitresult[1].SVs.indices)
 
     N = batchLength(supportVectors)
-    indicesSupportVectors = filter(x -> x <= N, indicesNewSupportVectors)
-    indicesDataset = filter(x -> x > N, indicesNewSupportVectors)
-    indicesDataset = map(x -> x - N, indicesDataset)
+    idx_old = filter(i -> i <= N, indicesNewSupportVectors)
+    idx_new = filter(i -> i > N, indicesNewSupportVectors)
+    idx_new = map(i -> i - N, idx_new)
 
-    indicesFromOld = isempty(idx_old) ? ( Array{eltype(supportVectors[1]),2}(undef,0,size(supportVectors[1],2)), Array{eltype(supportVectors[2]),1}(undef,0) ) :
+    sv_from_old = isempty(idx_old) ? ( Array{eltype(supportVectors[1]),2}(undef,0,size(supportVectors[1],2)), Array{eltype(supportVectors[2]),1}(undef,0) ) :
                  selectInstances(supportVectors, idx_old)
-    indicesFromNew = isempty(idx_new) ? ( Array{eltype(dataset[1]),2}(undef,0,size(dataset[1],2)), Array{eltype(dataset[2]),1}(undef,0) ) :
+    sv_from_new = isempty(idx_new) ? ( Array{eltype(dataset[1]),2}(undef,0,size(dataset[1],2)), Array{eltype(dataset[2]),1}(undef,0) ) :
                  selectInstances(dataset, idx_new)
-    
-    NewSupportVectors = joinBatches(indicesFromOld, indicesFromNew)
 
-    return (mach, NewSupportVectors, (indicesSupportVectors, indicesDataset))
+    newSupportVectors = joinBatches(sv_from_old, sv_from_new)
 
+    return mach, newSupportVectors, (idx_old, idx_new)
 end;
 
 function trainSVM(batches::AbstractArray{<:Batch,1}, kernel::String, C::Real;
