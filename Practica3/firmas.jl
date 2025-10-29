@@ -783,7 +783,7 @@ function predictKNN_SVM(dataset::Batch, instance::AbstractArray{<:Real,1}, k::In
 
     svm = SVMClassifier(kernel = "linear", cost = Float64(C))
     # hacemos permutedims para que los inputs estén en filas y vec por si los targets son una matriz de una fila
-    mach = machine(svm, permutedims(inputs_knn), vec(targets_knn))
+    mach = machine(svm, permutedims(inputs_knn), categorical(vec(targets_knn)))
     MLJ.fit!(mach)
     prediction = predict(mach, reshape(instance, 1, :))
 
