@@ -745,12 +745,7 @@ function nearestElements(dataset::Batch, instance::AbstractArray{<:Real,1}, k::I
 end;
 
 function predictKNN(dataset::Batch, instance::AbstractArray{<:Real,1}, k::Int)
-    inputs = batchInputs(dataset)
-    targets = batchTargets(dataset)
-    distances = euclideanDistances(permutedims(inputs), vec(instance))  
-    k_indices = partialsortperm(distances, 1:k)
-    outputs = targets[k_indices]
-    return mode(outputs)
+    return mode(batchTargets(nearestElements(dataset, instance, k)))
 end;
 
 function predictKNN(dataset::Batch, instances::AbstractArray{<:Real,2}, k::Int)
