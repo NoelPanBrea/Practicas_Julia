@@ -788,12 +788,12 @@ function predictKNN_SVM(dataset::Batch, instance::AbstractArray{<:Real,1}, k::In
     y = categorical(vec(y_knn))
 
     mach = machine(svm, X, y)
-    fit!(mach)
+    MLJ.fit!(mach)
 
     x1 = reshape(instance, 1, :)   # 1×d
-    ŷ = predict(mach, x1)
+    y1 = predict(mach, x1)
 
-    return ŷ[1]
+    return y1[1]
 end
 
 function predictKNN_SVM(dataset::Batch, instances::AbstractArray{<:Real,2}, k::Int, C::Real)
