@@ -781,12 +781,11 @@ function predictKNN_SVM(dataset::Batch, instance::AbstractArray{<:Real,1}, k::In
         return y_knn[1]
     end
 
-    svm = SVMClassifier(kernel="linear", cost=Float64(C))
+    svm = SVMClassifier(kernel=LIBSVM.Kernel.Linear, cost=Float64(C))
 
     # filas = observaciones (no permutar)
-    X = Matrix(X_knn)
+    X = MLJ.table(X_knn)
     y = categorical(vec(y_knn))
-
     mach = machine(svm, X, y)
     MLJ.fit!(mach)
 
