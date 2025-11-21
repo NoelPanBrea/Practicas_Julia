@@ -5,7 +5,8 @@
 # ----------------------------------------------------------------------------------------------
 
 import FileIO.load
-using DelimitedFiles
+using CSV
+using DataFrames
 using JLD2
 using Images
 
@@ -22,12 +23,9 @@ function loadDataset(datasetName::String, datasetFolder::String)
     fpath = abspath(joinpath(datasetFolder, fname))
     isfile(fpath) || return nothing
 
-    M = readdlm(fpath, ',', Any)
+    data = CSV.File(fpath, header=true) |> DataFrame
 
-    headers = String.(M[1, :])      # cabeceras
-    data    = M[2:end, :]           # datos
-
-    return (headers, data)
+    return data
 end;
 
 

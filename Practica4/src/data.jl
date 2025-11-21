@@ -1,11 +1,20 @@
 include("firmas.jl")
 
+using CSV
+using DataFrames
+
+
 function CreateDataset(datasetFolder::String)
     files = fileNamesFolder(datasetFolder, "csv")
-    _, merged_data = vcat(loadDataset.(files, dataset_folder))
+    datasets_list = loadDataset.(files, dataset_folder)
+    merged_data = DataFrame()
+    for dataset in datasets_list
+    merged_data = vcat(merged_data, dataset)
+    end
+
     return merged_data
 end
 
 dataset_folder = "Practica4/dataset"
 dataset = CreateDataset(dataset_folder)
-writedlm("Practica4/createddataset/merged.csv", dataset, ',')
+CSV.write("Practica4/createddataset/merged.csv", dataset)
