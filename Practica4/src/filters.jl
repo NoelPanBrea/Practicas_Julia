@@ -15,5 +15,18 @@ function kendall(dataset::Tuple{DataFrame, BitArray})
 end;
 
 
-function anova()
+
+function anova(dataset::Tuple{DataFrame, BitArray})
+    inputs, labels = dataset; 
+    means = mean.(inputs[:, eachcol(inputs)]); 
+    classes = unique(labels, dims = 1); 
+    mean_class = [];
+    for class in classes 
+        index = findall(row -> row == class, eachrow(labels)); 
+        push!(mean_class, mean(inputs[index, eachcol(inputs)])); 
+    end;
+
+    sst = sum((inputs[:, eachcol(inputs)] .- means) .^ 2); 
+    sse = sum([sum((inputs[labels .== c, :] .- mean_class[c]).^2) for c in classes])
+    f = (sst - sse) / (length(classes) - 1) / (sse / (size(inputs, 1) - length(classes)));
 end;
