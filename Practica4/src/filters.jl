@@ -1,37 +1,48 @@
+include("firmas.jl")
+
 function kendall(dataset::Tuple{DataFrame, BitArray})
-    CP = 0;
-    targets = findall.(eachrow(dataset[2]));
-    inputs = dataset[1];
-    for (i, x) in zip(eachrow(inputs), targets)
-        for (j, y) in zip(eachrow(inputs), targets)
-            t1 = any(i .< j & x < y)
-            t2 = any(i .> j & x > y)
-            if j!=i & (t1 || t2)
-                CP += count(t1) + count(t2)
-            end;
+    targets = sum.(findall.(eachrow(dataset[2])));
+    inputs = Matrix(dataset[1]);
+    input_size = size(inputs, 1);
+    CP = zeros(size(inputs, 2));
+    for (n, (i, x)) in enumerate(zip(1:input_size, targets))
+        i = inputs[i, :]
+        for (j, y) in zip(n:input_size, targets[n+1:end])
+            j = inputs[j, :]
+            t1 = (i .< j) .& (x < y)
+            t2 = (i .> j) .& (x > y)
+            t3 = convert(Array{Int64}, t1 .|| t2)
+            t3[findall(x -> x == 0, t3)] .-= 1
+            CP += t3
         end;
     end;
-    return CP
+    return CP ./ (0.5 * size(inputs, 1) * size(inputs, 1))
 end;
 
 
 
 function anova(dataset::Tuple{DataFrame, BitArray})
     inputs, labels = dataset; 
-    means = mean.(inputs[:, eachcol(inputs)]); 
-    targets = findall(eachrow[labels]);
+    means = mean.(eachcol(inputs));
+    targets = sum.(findall.(eachrow(labels)));
     classes = unique(targets);
     mean_class = [];
+    print(classes)
+    # print(targets)
     for class in classes
-        index = findall(row -> row == class, eachrow(labels)); 
-        push!(mean_class, mean(inputs[index, eachcol(inputs)])); 
+        index = findall(x -> x == class, labels);
+        println(index);
+        push!(mean_class, mean.(eachcol(inputs[index, :]))); 
     end;
+    println(mean_class)
 
-    sst = sum((inputs[:, eachcol(inputs)] .- means) .^ 2);
+    sst = sum(sum([(col .- mn) .^ 2 for (mn, col) in zip(means, eachcol(inputs))]));
+    print(sst)
     sse = 0;
     for c in classes
-        index = findall(row -> row == class, eachrow(labels)); 
-        sse += sum([sum((inputs[index, :] .- mean_class[c]).^2)]);
+        index = findall(row -> row == c, eachrow(labels));
+        println(size([(col .- mean_class[c]) .^ 2 for col in eachcol(inputs[index, :])]))
+        sse += sum(sum([(col .- mean_class[c]) .^ 2 for col in eachcol(inputs[index, :])]));
     end;
-    f = (sst - sse) / (length(classes) - 1) / (sse / (size(inputs, 1) - length(classes)));
+    return (sst - sse) / (length(classes) - 1) / (sse / (size(inputs, 1) - length(classes)));
 end;
