@@ -36,7 +36,7 @@ function anova(dataset::Tuple{DataFrame, BitArray})
     sse = 0;
     for class in classes
         index = findall(x -> x == class, targets)
-        sse += sum(sum([(col .- mean_class[class]) .^ 2 for col in eachcol(inputs[index, :])]));
+        sse += sum(sum([(col .- mc).^2 for (col, mc) in zip(eachcol(inputs[index, :]), mean_class[class])]))
     end;
 
     return (sst - sse) / (length(classes) - 1) / (sse / (size(inputs, 1) - length(classes)));
