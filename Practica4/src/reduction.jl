@@ -15,10 +15,11 @@ end
 
 
 
-function lda(inputs::AbstractArray{<:Real,2}, labels::AbstractArray)
-
+function lda(dataset::Tuple{DataFrame, BitArray})
+    inputs, labels = dataset;
     X = Matrix{Float64}(inputs)
-    classes = unique(labels)
+    targets = [sum(findall(row)) for row in eachrow(labels)]
+    classes = unique(targets)
     n_features = size(X, 2)
 
     global_mean = mean(X, dims=1)
@@ -28,7 +29,7 @@ function lda(inputs::AbstractArray{<:Real,2}, labels::AbstractArray)
     S_B = zeros(n_features, n_features)
 
     for c in classes
-        X_class = X[labels .== c, :]
+        X_class = X[targets .== c, :]
         mean_class = mean(X_class, dims=1)
 
         # dispersión dentro de las clases
@@ -46,8 +47,9 @@ function lda(inputs::AbstractArray{<:Real,2}, labels::AbstractArray)
     # resolver autovalores
     eigvals, eigvecs = eigen(pinv(S_W) * S_B)
 
-    # ordenar por autovalor descendente
-    idx = sortperm(eigvals, rev=true)
+    # nos quedamos solo con la parte real de los autovalores complejos para que Julia pueda ordenarlos bien
+    eigvals_real = real.(eigvals)
+    idx = sortperm(eigvals_real, rev=true)
     eigvecs = eigvecs[:, idx]
     W = eigvecs[:, 1]
 
@@ -62,13 +64,15 @@ end
 
 
 
-function fastica(X::AbstractArray{<:Real,2}; tol, max_iter)
+function fastica(dataset::Tuple{DataFrame, BitArray}; tol, max_iter)
+    inputs, _ = dataset;
+    X = Matrix{Float64}(inputs)
     n, m = size(X)
 
     X_centered = X .- mean(X, dims=2)
 
     # blanqueo (whitening)
-    cov_matrix = cov(permutedims(X_centered))   # cov espera instancias en filas
+    cov_matrix = cov(permutedims(X_centered))   # permutedims porque cov espera instancias en filas
     E, D, _ = svd(cov_matrix)
     D_inv = Diagonal(1.0 ./ sqrt.(D))
     whitening = E * D_inv * E'
@@ -84,12 +88,12 @@ function fastica(X::AbstractArray{<:Real,2}; tol, max_iter)
             w = (X_white * (tanh.(w' * X_white))') ./ m .- mean(1 .- (tanh.(w' * X_white)).^2) * w
             w ./= norm(w)
 
-            if abs(w' * w_prev) > 1 - tol
+            if abs(dot(w, w_prev)) > 1 - tol
                 break
             end
         end
 
-        W[i, :] .= w'
+        W[i, :] = w
     end
 
     S = W * X_white
