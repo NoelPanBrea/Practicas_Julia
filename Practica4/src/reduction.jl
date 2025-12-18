@@ -11,9 +11,18 @@ function pca(inputs::DataFrame; n_components::Int=2)
     return DataFrame(X_pca, :auto), pca_model
 end
 
+function pca(inputs::DataFrame, threshold::Float64)
+    X = Matrix(inputs)
+    Xc = X .- mean(X, dims=1)
 
+    pca_model = fit(PCA, Xc'; maxoutdim=size(X,2))
 
+    coeffs = cumsum(principalvars(pca_model)) / sum(principalvars(pca_model))
+    k = findfirst(>=(threshold), coeffs)
+    X_pca = MultivariateStats.transform(pca_model, Xc')'[ :, 1:k]
 
+    return DataFrame(X_pca, :auto), pca_model, k
+end
 
 function lda(dataset::Tuple{DataFrame, BitArray})
     inputs, labels = dataset;
@@ -58,11 +67,6 @@ function lda(dataset::Tuple{DataFrame, BitArray})
 
     return W, X_proj
 end
-
-
-
-
-
 
 function fastica(dataset::Tuple{DataFrame, BitArray}; tol, max_iter)
     inputs, _ = dataset;
