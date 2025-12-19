@@ -4,7 +4,7 @@ function pca(inputs::DataFrame; n_components::Int=2)
     X = Matrix(inputs)
     Xc = X .- mean(X, dims=1)
 
-    pca_model = fit(PCA, Xc'; maxoutdim=n_components)
+    pca_model = MultivariateStats.fit(PCA, Xc'; maxoutdim=n_components)
 
     X_pca = MultivariateStats.transform(pca_model, Xc')'
 
@@ -15,7 +15,7 @@ function pca(inputs::DataFrame, threshold::Float64)
     X = Matrix(inputs)
     Xc = X .- mean(X, dims=1)
 
-    pca_model = fit(PCA, Xc'; maxoutdim=size(X,2))
+    pca_model = MultivariateStats.fit(PCA, Xc'; maxoutdim=size(X,2))
 
     coeffs = cumsum(principalvars(pca_model)) / sum(principalvars(pca_model))
     k = findfirst(>=(threshold), coeffs)
@@ -60,12 +60,13 @@ function lda(dataset::Tuple{DataFrame, BitArray})
     eigvals_real = real.(eigvals)
     idx = sortperm(eigvals_real, rev=true)
     eigvecs = eigvecs[:, idx]
-    W = eigvecs[:, 1]
+    n_components = min(5, length(classes)-1)  # nunca más que n_classes-1
+    W = eigvecs[:, 1:n_components]
 
     # proyección de los datos en el nuevo subespacio
     X_proj = X * W
 
-    return W, X_proj
+    return X_proj, W
 end
 
 function fastica(dataset::Tuple{DataFrame, BitArray}; tol, max_iter)
