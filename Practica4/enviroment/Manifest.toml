@@ -2,7 +2,7 @@
 
 julia_version = "1.11.3"
 manifest_format = "2.0"
-project_hash = "62b8623d2661673c9182c5b0cba9f5fd01c64724"
+project_hash = "82ad11b05b0e3a8a51df6d9d9de20b66dc9aedaf"
 
 [[deps.ARFFFiles]]
 deps = ["CategoricalArrays", "Dates", "Parsers", "Tables"]
@@ -237,6 +237,24 @@ deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers
 git-tree-sha1 = "deddd8725e5e1cc49ee205a1964256043720a6c3"
 uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 version = "0.10.15"
+
+[[deps.CUDA_Driver_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "63b4911c80ade9de10ec4b766e99cb1a628f465f"
+uuid = "4ee394cb-3365-5eb0-8335-949819d2adfc"
+version = "13.1.0+0"
+
+[[deps.CUDA_Runtime_jll]]
+deps = ["Artifacts", "CUDA_Driver_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
+git-tree-sha1 = "92cd84e2b760e471d647153ea5efc5789fc5e8b2"
+uuid = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
+version = "0.19.2+0"
+
+[[deps.CatBoost]]
+deps = ["MLJModelInterface", "OrderedCollections", "PythonCall", "Tables"]
+git-tree-sha1 = "ebe2a00983bea8f321b10eab0a4dc966c44a38d9"
+uuid = "e2e10f9a-a85d-4fa9-b6b2-639a32100a12"
+version = "0.3.5"
 
 [[deps.CatIndices]]
 deps = ["CustomUnitRanges", "OffsetArrays"]
@@ -1207,6 +1225,18 @@ git-tree-sha1 = "f04133fe05eff1667d2054c53d59f9122383fe05"
 uuid = "89763e89-9b03-5906-acba-b20f662cd828"
 version = "4.7.2+0"
 
+[[deps.LightGBM]]
+deps = ["Dates", "Libdl", "LightGBM_jll", "MLJModelInterface", "SparseArrays", "Statistics"]
+git-tree-sha1 = "db6294f87ecb6f91a3ee2f1aed827ce3c189f80d"
+uuid = "7acf609c-83a4-11e9-1ffb-b912bcd3b04a"
+version = "2.1.0"
+
+[[deps.LightGBM_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LLVMOpenMP_jll", "Libdl"]
+git-tree-sha1 = "20ee4be44c3149606abde993dc72dd2cf9909adb"
+uuid = "0e4427ef-1ff7-5cd7-8faa-8ff0877bb2ec"
+version = "3.3.5+1"
+
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -1395,6 +1425,12 @@ deps = ["ComputationalResources", "Distributed", "Distributions", "LatinHypercub
 git-tree-sha1 = "38aab60b1274ce7d6da784808e3be69e585dbbf6"
 uuid = "03970b2e-30c4-11ea-3135-d1576263f10f"
 version = "0.8.8"
+
+[[deps.MLJXGBoostInterface]]
+deps = ["MLJModelInterface", "SparseArrays", "Tables", "XGBoost"]
+git-tree-sha1 = "4f0acbc60ab1767faf69770a750a88844cf86c5c"
+uuid = "54119dfa-1dab-4055-a167-80440f4f7a91"
+version = "0.3.13"
 
 [[deps.MLStyle]]
 git-tree-sha1 = "bc38dff0548128765760c79eb7388a4b37fae2c8"
@@ -2012,6 +2048,12 @@ git-tree-sha1 = "52962839426b75b3021296f7df242e40ecfc0852"
 uuid = "dc90abb0-5640-4711-901d-7e5b23a2fada"
 version = "0.1.2"
 
+[[deps.SparseMatricesCSR]]
+deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "cc05d16e340aecfa0e4cf4616194abc894cd0bca"
+uuid = "a0a7dd2c-ebf4-11e9-1f05-cf50bc540ca1"
+version = "0.6.9"
+
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
 git-tree-sha1 = "f2685b435df2613e25fc10ad8c26dddb8640f547"
@@ -2323,6 +2365,32 @@ version = "1.0.0"
 git-tree-sha1 = "cd1659ba0d57b71a464a29e64dbc67cfe83d54e7"
 uuid = "76eceee3-57b5-4d4a-8e66-0e911cebbf60"
 version = "1.6.1"
+
+[[deps.XGBoost]]
+deps = ["AbstractTrees", "CEnum", "JSON3", "LinearAlgebra", "OrderedCollections", "SparseArrays", "SparseMatricesCSR", "Statistics", "Tables", "XGBoost_GPU_jll", "XGBoost_jll"]
+git-tree-sha1 = "a2038e00d6299ac2e303d894ca91b01f7e51a865"
+uuid = "009559a3-9522-5dbb-924b-0b6ed2b22bb9"
+version = "2.5.2"
+
+    [deps.XGBoost.extensions]
+    XGBoostCUDAExt = "CUDA"
+    XGBoostTermExt = "Term"
+
+    [deps.XGBoost.weakdeps]
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    Term = "22787eb5-b846-44ae-b979-8e399b8463ab"
+
+[[deps.XGBoost_GPU_jll]]
+deps = ["Artifacts", "CUDA_Runtime_jll", "CompilerSupportLibraries_jll", "JLLWrappers", "LLVMOpenMP_jll", "LazyArtifacts", "Libdl", "TOML"]
+git-tree-sha1 = "0cb649db2cec44a68560c72526f4b166b6378d82"
+uuid = "bf13095a-df47-5f5c-aa1a-d897479947cc"
+version = "2.1.5+0"
+
+[[deps.XGBoost_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LLVMOpenMP_jll", "Libdl"]
+git-tree-sha1 = "f44f3bacdc99ca220ef9ead2b6cbce9a1b8957bc"
+uuid = "a5c6f535-4255-5ca2-a466-0e519f119c46"
+version = "2.1.5+0"
 
 [[deps.XZ_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
