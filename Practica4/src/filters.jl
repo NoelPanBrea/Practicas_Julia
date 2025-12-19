@@ -3,6 +3,7 @@ include("firmas.jl")
 using Statistics
 using StatsBase
 using MLJ
+using MLJBase
 using MLJLinearModels
 
 function kendall(dataset::Tuple{DataFrame, BitArray})
@@ -120,17 +121,18 @@ end
 function rfe_logistic(dataset::Tuple{DataFrame, BitArray})
     inputs, labels = dataset
     targets = [sum(findall(row)) for row in eachrow(labels)]
+    inputs_matrix = Float64.(MLJBase.Matrix(inputs))
+    targets = Float64.(targets)
 
-    features = collect(names(inputs))
-    targets_categorical = categorical(string.(targets))
+    n_features = size(inputs_matrix, 2)
+    features = collect(1:n_features)
+    k = ceil(Int, length(features) / 2)
 
-    while length(features) > 1
-        model = LogisticClassifier()
-        mach = machine(model, coalesce.(inputs[:, features], 0.0), targets_categorical)
-        MLJ.fit!(mach)
+    while length(features) > k
+        model = LogisticRegression()
+        theta = MLJLinearModels.fit(model, inputs_matrix[:, features], targets)
 
-        coefs = abs.(mach.fitresult.coefs[1][2:end])
-        k = ceil(Int, length(features) / 2)
+        coefs = theta[2:end]
 
         idx = sortperm(coefs, rev=true)[1:k]
         features = features[idx]
