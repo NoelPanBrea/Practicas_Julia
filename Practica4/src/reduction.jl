@@ -1,4 +1,4 @@
-using MultivariateStats, Statistics, DataFrames, LinearAlgebra, Random
+using MultivariateStats, Statistics, DataFrames, LinearAlgebra, Random, Plots
 
 function pca(inputs::DataFrame; n_components::Int=2)
     X = Matrix(inputs)
@@ -105,3 +105,93 @@ function fastica(dataset::Tuple{DataFrame, BitArray}; tol, max_iter)
 
     return S, W
 end
+
+# Visualización de los datos
+function plot_pca_test(train_df::DataFrame, test_df::DataFrame, y_test)
+    X_train = Matrix(train_df)
+    X_test  = Matrix(test_df)
+
+    # centrado usando solo train
+    μ = mean(X_train, dims=1)
+    X_train_c = X_train .- μ
+    X_test_c  = X_test  .- μ
+
+    # PCA entrenado en train
+    pca_model = fit(PCA, X_train_c'; maxoutdim=2)
+
+    # proyeccion de test
+    X_test_pca = transform(pca_model, X_test_c')'
+
+    scatter(
+        X_test_pca[:, 1],
+        X_test_pca[:, 2],
+        group = y_test,
+        legend = :outerright,
+        title = "PCA – Proyección 2D (Test)",
+        xlabel = "Componente 1",
+        ylabel = "Componente 2",
+        markersize = 3
+    )
+end
+
+
+function plot_lda_test(train_df::DataFrame, test_df::DataFrame, y_train, y_test)
+    # entrenar LDA en train
+    X_train_lda, W = lda((train_df, y_train))
+
+    # proyectar test usando W aprendido
+    X_test = Matrix(test_df)
+    X_test_lda = X_test * W[:, 1:2]
+
+    scatter(
+        X_test_lda[:, 1],
+        X_test_lda[:, 2],
+        group = y_test,
+        legend = :outerright,
+        title = "LDA – Proyección 2D (Test)",
+        xlabel = "Componente 1",
+        ylabel = "Componente 2",
+        markersize = 3
+    )
+end
+
+
+function plot_ica_test(train_df::DataFrame, test_df::DataFrame, y_test;
+                       tol=1e-4, max_iter=500)
+
+    # entrenar ICA en train
+    S_train, W = fastica((train_df, falses(nrow(train_df))); 
+                         tol=tol, max_iter=max_iter)
+
+    X_train = Matrix(train_df)
+    X_test  = Matrix(test_df)
+
+    # centrado usando train
+    μ = mean(X_train, dims=1)
+    X_test_c = X_test .- μ
+
+    cov_matrix = cov(permutedims(X_train .- μ))
+    E, D, _ = svd(cov_matrix)
+    whitening = E * Diagonal(1.0 ./ sqrt.(D)) * E'
+
+    X_test_white = whitening * permutedims(X_test_c)
+
+    # proyección ICA
+    S_test = (W * X_test_white)[1:2, :]'
+
+    scatter(
+        S_test[:, 1],
+        S_test[:, 2],
+        group = y_test,
+        legend = :outerright,
+        title = "ICA – Proyección 2D (Test)",
+        xlabel = "Componente 1",
+        ylabel = "Componente 2",
+        markersize = 3
+    )
+end
+
+plot_pca_test(X_train_df, X_test_df, y_test)
+plot_lda_test(X_train_df, X_test_df, y_train, y_test)
+plot_ica_test(X_train_df, X_test_df, y_test)
+
