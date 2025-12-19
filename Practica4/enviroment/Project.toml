@@ -1,6 +1,13 @@
+name = "PracticaML2"
+uuid = "59eae915-1c53-4b95-88c0-ba4237d83c95"
+authors = ["NoelPanBrea <npanbrea@gmail.com>"]
+version = "0.1.0"
+
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DecisionTree = "7806a523-6efd-50cb-b5f6-3fa6f1930dbb"
+EvoTrees = "f6006082-12f8-11e9-0c9c-0d5d367ab1e5"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
@@ -9,5 +16,13 @@ JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LIBSVM = "b1bec4e5-fd48-53fe-b0cb-9723c09d164b"
 MLJ = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
 MLJLIBSVMInterface = "61c7150f-6c77-4bb1-949c-13197eac2a52"
+MLJScikitLearnInterface = "5ae90465-5518-4432-b9d2-8a1def2f0cab"
+MultivariateStats = "6f286f6a-111f-5878-ab1e-185364afe411"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+
+[compat]
+DecisionTree = "0.12.4"
+EvoTrees = "0.18.2"
+MLJScikitLearnInterface = "0.7.0"
+MultivariateStats = "0.10.3"
