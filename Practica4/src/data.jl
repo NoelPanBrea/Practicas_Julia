@@ -1,5 +1,3 @@
-include("firmas.jl")
-
 
 function CreateDataset(datasetFolder::String)
     files = fileNamesFolder(datasetFolder, "csv");
@@ -9,6 +7,24 @@ function CreateDataset(datasetFolder::String)
         merged_data = vcat(merged_data, dataset);
     end;
     return merged_data;
+end;
+
+function fileNamesFolder(folderName::String, extension::String)
+    isdir(folderName) || return String[]
+    extU = uppercase(extension)
+    files = sort(filter(f -> endswith(uppercase(f), ".$extU"), readdir(folderName)))
+    return map(f -> first(splitext(f)), files)
+end
+
+
+function loadDataset(datasetName::String, datasetFolder::String)
+    fname = datasetName * ".csv"
+    fpath = abspath(joinpath(datasetFolder, fname))
+    isfile(fpath) || return nothing
+
+    data = CSV.File(fpath, header=true) |> DataFrame
+
+    return data
 end;
 
 function OneHotEncoding(labels::AbstractArray{<:Any,1})

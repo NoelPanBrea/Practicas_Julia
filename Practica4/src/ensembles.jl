@@ -10,9 +10,9 @@ function TrainCrossValEnsembles(modelType::Symbol, modelHyperparameters::Dict, d
         testIndices = findall(x -> x == fold, crossValidationIndices);
 
         train_inputs = pca(inputs[trainIndices, :], 0.95)[1];
-        train_targets = categorical(sum.(findall.(eachrow(targets[trainIndices, :]))), ordered = true, labels=1:6);
+        train_targets = categorical(sum.(findall.(eachrow(targets[trainIndices, :]))), ordered = true, levels=[1, 2, 3, 4, 5, 6]);
         test_inputs = pca(inputs[testIndices, :], n_components=size(train_inputs, 2))[1];
-        test_targets = categorical(sum.(findall.(eachrow(targets[testIndices, :]))), ordered = true, labels=1:6);
+        test_targets = categorical(sum.(findall.(eachrow(targets[testIndices, :]))), ordered = true, levels=[1, 2, 3, 4, 5, 6]);
 
         if modelType == :AdaB
             model = AdaBoost(n_iter=modelHyperparameters["n_iter"])
@@ -22,7 +22,7 @@ function TrainCrossValEnsembles(modelType::Symbol, modelHyperparameters::Dict, d
             predictions = mode.(pred);
         elseif modelType == :BaggingC
             model = MLJ.EnsembleModel(model=kNNClassifier(K=5),
-                                    bagging_fraction=1,
+                                    bagging_fraction=0.5,
                                     n=modelHyperparameters["n_estimators"])
             mach = machine(model, train_inputs, train_targets, scitype_check_level=0);
             MLJ.fit!(mach, verbosity=0);
@@ -56,10 +56,8 @@ end;
 function TrainEnsembles(modelType::Symbol, modelHyperparameters::Dict, dataset::Tuple{Tuple{DataFrame, BitMatrix}, Tuple{DataFrame, BitMatrix}})
     ((train_inputs, train_targets), (test_inputs, test_targets)) = dataset;
 
-    train_inputs = pca(train_inputs, 0.95)[1];
-    test_inputs = pca(test_inputs, n_components=size(train_inputs, 2))[1];
-    train_targets = categorical(sum.(findall.(eachrow(train_targets))));
-    test_targets = categorical(sum.(findall.(eachrow(test_targets))));
+    train_targets = categorical(sum.(findall.(eachrow(train_targets))), ordered = true, levels=[1, 2, 3, 4, 5, 6]);
+    test_targets = categorical(sum.(findall.(eachrow(test_targets))), ordered = true, levels=[1, 2, 3, 4, 5, 6]);
 
     if modelType == :AdaB
             model = AdaBoost(n_iter=modelHyperparameters["n_iter"])
